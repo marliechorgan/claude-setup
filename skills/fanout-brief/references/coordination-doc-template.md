@@ -1,25 +1,25 @@
 # Coordination record template
 
-Use the project's existing task/handover surface. Describe current state and decisions, not a growing diary. Keep confidential facts and secrets inside the project's boundary.
+Use the project's existing task or handover surface. Record current state and decisions, not a diary. Keep confidential facts and secrets inside the project.
 
 ```markdown
 # <task ID> — <outcome>
 
-Acceptance owner: <coordinator>. Contract revision: <revision>.
-Completion: <reviewed cases and observable result>.
-Authority: <scope and approvals; remaining outward actions>.
-Measured state (<time>): <source, dirty work, runtime, configuration>.
+Acceptance owner: <lead>. Contract revision: <revision>.
+Done when: <reviewed cases and observable result>.
+Permissions: <scope and approvals; outward actions still pending>.
+Measured state (<time>): <source, uncommitted work, runtime, configuration>.
 Evidence: <baseline and current acceptance records>.
 
-| Worker | Mission | Owned paths/resources | Dependency | Candidate | Status |
+| Worker | Mission | Owned paths/resources | Depends on | Build under test | Status |
 |---|---|---|---|---|---|
-| <ID> | <outcome> | <scope> | <input> | <pin/snapshot> | <state + reason> |
+| <ID> | <outcome> | <scope> | <input> | <commit/snapshot> | <state + reason> |
 
 Shared contracts: <path/revision, producer, consumer, owner>.
-Decisions: <rationale, owner and reopening condition>.
+Decisions: <rationale, owner, what would reopen it>.
 Test capacity: <instance/fixture owners; persona/review queue>.
-Integration: <included revisions, combined candidate and evidence>.
-Remaining: <next bounded task, owner and acceptance; unresolved limits>.
+Integration: <included revisions, combined build and its evidence>.
+Remaining: <next bounded task, owner and acceptance; open limits>.
 ```
 
-Refresh volatile facts when relevant state changes or work resumes. A new task should not require every old prompt. Ownership transfers require acknowledgement; silence is not a lease. The coordinator may do independent integration/verification work while respecting worker ownership.
+Refresh volatile facts when state changes or work resumes; a new task should not need every old prompt. Ownership transfers need acknowledgement: silence is not a lease. The lead may integrate and verify independently, outside workers' owned files.

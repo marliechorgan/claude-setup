@@ -1,64 +1,59 @@
-# General method: preserve meaning from intent to verified outcome
+# General method
 
-Use this reference to apply the design method to a new domain, interface or agent framework. Product catalogues, enquiries, browser previews and supervisor topologies are examples. Extract the underlying decision and evidence obligations before selecting those implementations.
+For a new domain, interface or framework: find the decision and evidence obligations under the examples (catalogues, enquiries, previews, supervisors).
 
 ## Seven contracts
 
-| Contract | Question the design must answer |
+| Contract | The design must answer |
 |---|---|
-| Outcome | What result does the user intend, what would establish it, and which decisions remain theirs? |
-| Decision environment | At this decision, can the role observe the relevant state, use the necessary capabilities and interpret their results? |
-| Evidence and selection | What supports the choice, which constraints were checked, and what remains uncertain? |
-| Coordination | Who owns each result/update, what assumptions does a handoff depend on, and how are disagreement and partial results handled? |
-| Action and recovery | Which component may cause the effect, under what preconditions, and what happens after timeout, retry, cancellation or restart? |
-| Acceptance | Which independent expectation and observed output/state establish success, including preserved useful work and prohibited effects? |
-| Change and continuation | Which candidate/configuration was tested, what invalidates that evidence, and what must the next owner recheck? |
+| Outcome | What does the user want, what would show it, which decisions stay theirs? |
+| Decision environment | Can the role see the state, use the tools and read their results here? |
+| Evidence and selection | What supports the choice, which constraints were checked, what is uncertain? |
+| Coordination | Who owns each update, what does a handoff assume, how are disagreement and partial results handled? |
+| Action and recovery | Who may cause the effect, on what preconditions, and what happens after timeout, retry, cancellation or restart? |
+| Acceptance | Which independent expectation and observed state show success, including work preserved and effects prohibited? |
+| Change and continuation | Which build and configuration was tested, what invalidates that, what must the next owner recheck? |
 
-Map these questions onto existing architecture and task records. They are not seven services, seven agents or seven mandatory documents. A deterministic component or one agent may satisfy several contracts. Introduce a separate role when its distinct context, permissions, parallel work or decision quality earns the coordination cost.
+These are questions, not seven services, agents or documents; one component can answer several.
 
-## Generalize the example without erasing its precision
+## Generalise the example, keep its precision
 
-| Example mechanism | Transferable principle | Domain-specific choice |
+| Example | Principle | Domain choice |
 |---|---|---|
-| Search a product catalogue | Gather scoped candidates without upgrading relevance to correctness | SQL, exact lookup, text/semantic retrieval or another evidence source |
-| Read full product/company records | Obtain authoritative details sufficient for this decision | Required fields, provenance and effective period; not every physical column |
-| Ask which company location | Resolve missing user intent while retaining established work | Which ambiguity matters, who can resolve it, and whether asking is necessary |
-| Create one linked enquiry | Validate the authorized effect and verify its required relationships | Database write, file, ticket, recommendation, approved response or other output |
-| Shared task version | Prevent an update from silently invalidating newer decisions | Single writer, transactions, conditional writes or explicit merge policy |
-| Rulebook → prompt → code → check | Maintain one owned rule meaning across its consumers and evidence | Rule locations, role views and which parts require judgement |
-| Worker worktree → preview → persona test | Exercise the actual changed candidate from an independent user's perspective | Browser, API, CLI, test tenancy or scheduled shared environment |
-| Combine worker commits and rerun | A composition is a new candidate with new interaction risks | Merge, patch application, configuration assembly or generated artifact composition |
+| Search a catalogue | Scoped candidates; relevance isn't correctness | SQL, exact, text or semantic retrieval |
+| Read full records | The authoritative details this decision needs | Required fields, provenance, effective period |
+| Ask which company location | Resolve missing intent, keep work done | Which ambiguity matters, who resolves it, whether to ask |
+| Create one linked enquiry | Validate the authorised effect and its links | Database write, file, ticket, approved reply |
+| Shared task version | No update silently invalidates newer decisions | Single writer, transactions, conditional writes, merge policy |
+| Rulebook → prompt → code → check | One owned rule meaning across consumers | Where rules live, role views, what needs judgement |
+| Worktree → preview → persona | Exercise the real changed build as an independent user | Browser, API, CLI, test tenancy, shared environment |
+| Combine commits and rerun | A combination is a new build with new risks | Merge, patch, config or artefact assembly |
 
-“One owner” applies to the mutable fact or aggregate, not necessarily the whole application. Parallel independent facts can have different owners. A changed state version is a reason to validate a result's assumptions; a result whose dependencies are unchanged may be safely retained under an explicit merge rule. Do not discard valid work indiscriminately or overwrite new intent with a stale proposal.
+"One owner" is per mutable fact or aggregate, not per application. After a state-version change, recheck a result's assumptions; one whose dependencies are unchanged can stay under an explicit merge rule. Don't discard valid work wholesale or let a stale proposal overwrite new intent.
 
-“One rule” means one authoritative meaning, owner, scope and version. Several role-specific views may be useful. Exact wording equality does not establish semantic agreement, and clear numbered prompt steps do not enforce execution order.
+"One rule" is one authoritative meaning, owner, scope and version, with role views where useful. Identical wording doesn't prove identical meaning; numbered prompt steps don't enforce order.
 
-## Two systems, connected by acceptance
+## Two systems, joined by acceptance
 
-The product runtime transforms a user request into a supported outcome. The development process transforms a requested change into an accepted candidate. Both need scoped work, current state, stable interfaces, limits and verifiable outputs. They do not share identities, permissions or resource budgets automatically.
+Runtime and build share no identities, permissions or budgets by default. Corresponding parts:
 
-Keep these correspondences explicit:
+- product task and pending operation ↔ build task and change under review
+- a role's permitted tools ↔ a worker's owned files, test environment and effects
+- source and task-state freshness ↔ source snapshot, running process, effective config
+- product completion evidence ↔ acceptance evidence for the change and the integrated build
+- runtime recovery ↔ recovering a stopped worker's files, reports and processes before rebuilding
 
-- Product task and pending operation ↔ development task and candidate under review.
-- Product role's permitted tools ↔ worker's owned files, test environment and effects.
-- Source-record and task-state freshness ↔ source snapshot, running process and effective configuration.
-- Product completion evidence ↔ acceptance-case evidence for the candidate and integrated build.
-- Runtime recovery ↔ recovering a stopped worker's files, reports and processes before rebuilding.
+The bridge is a reviewed acceptance case: `requirement/rule → intended behaviour → enforcing boundary → case → worker change → observed outcome`. "Implemented", "exercised", "accepted" and "deployed" are separate claims. The [shared work contract](../../fanout-brief/references/work-contract.md) holds the build record; [runtime-lifecycle.md](runtime-lifecycle.md) the runtime side.
 
-The bridge is a reviewed acceptance case. Trace `requirement/rule → intended behaviour → enforcing or reasoning boundary → case → worker change → observed candidate outcome`. Keep claims of implementation, exercise, acceptance and deployment separate. The [shared work contract](../../fanout-brief/references/work-contract.md) supplies the development record; [runtime-lifecycle.md](runtime-lifecycle.md) supplies product execution semantics.
+## Other kinds of work
 
-## Transfer to different work
+- **Research:** acceptance may be supported claims, stated counter-evidence and a usable report, no write. Agents repeating one source is not corroboration; a readable citation doesn't prove support.
+- **Documents:** inspect the rendered file, its sources and required content. A "successful" run with a missing or unusable file fails. Approving content and permission to distribute are separate.
+- **Support or operations:** resolve the account and action, carry its access scope, run the permitted operation, inspect the result. A closed ticket or confident reply isn't a fix.
+- **Non-conversational services:** drive real events, API calls or CLI inputs and check outputs and state; personas are for conversations. A simulator may drive the real app or replace a controlled external dependency, never the code under test. Name every bypassed transport, service or boundary.
 
-For research, acceptance may mean supported claims, explicit counterevidence and a usable report. A source is not independent corroboration merely because several agents repeat it; a readable citation is not proof the cited source supports the claim. An external write may not be needed at all.
+## Don't universalise a local pattern
 
-For document generation, inspect the rendered deliverable, source support and required content. Successful generation with a missing or unusable file fails the task. Content approval and permission to distribute the document are separate facts.
+Choose models and topology together from comparable outcomes. Keep evidence while its dependencies hold; rerun cases they affect. Enforce stable action invariants in code; use calibrated judgement for interpretive work.
 
-For support or operations, resolve the target account and intended action, carry its access scope, execute the permitted operation and inspect its resulting state. A closed ticket or confident reply does not establish the underlying problem was resolved.
-
-For a non-conversational service, use actual events, API calls or CLI inputs and verify outputs/state. Adaptive persona conversations are valuable for conversational surfaces; they are not a universal testing interface. A simulator may drive the real changed application or substitute a controlled external dependency; it cannot replace the implementation under test and still satisfy actual-candidate acceptance. Name every bypassed transport, service and other untested boundary.
-
-## Avoid universalizing a useful local pattern
-
-Choose models and topology together using comparable task outcomes; do not prescribe model choice first or last for every system. Preserve unchanged evidence where its dependencies still hold, and rerun affected cases when they change. Use deterministic enforcement for stable action invariants and calibrated judgement for genuinely interpretive work.
-
-A method succeeds when a new domain retains the decision, authority and evidence distinctions without importing the old domain's entities, tools, business rules, cloud provider, agent count or document volume.
+Success: the new domain keeps the decision, authority and evidence distinctions without importing the old one's entities, tools, rules, cloud provider, agent count or document volume.

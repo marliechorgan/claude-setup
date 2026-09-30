@@ -1,37 +1,33 @@
 # Integrate and accept a fan-out
 
-Integration owns the combination, not merely the merges. Use the [work contract](work-contract.md) and applicable review/release process. The Git steps below apply to repository changes.
+Integration owns the combined result, not just the merges. Terms follow the [work contract](work-contract.md); Git steps apply to repository changes.
 
-For research or artifact work, record exact source and output versions, reconcile contradictory claims, duplicated evidence and missing requirements, then inspect the combined deliverable against independently reviewed expectations. Preserve attribution and uncertainty. Use the relevant meaning, evidence and acceptance steps below; branch checks and running-application tests apply only when the deliverable includes those boundaries.
+For research or documents: record source and output versions, reconcile contradictions, duplicate evidence and gaps, and check the combined deliverable against independently reviewed expectations, keeping attribution and uncertainty.
 
-## Receive exact candidates
+## Receive exactly what was built
 
-Record worker/task ID, branch, returned revision or dirty snapshot, changed files and evidence. Read the diff and untracked outputs. Confirm evidence applies to the candidate and identify post-test edits.
+Record worker ID, branch, commit or uncommitted snapshot, changed files and evidence. Read the diff and untracked outputs; confirm the evidence is for this build and nothing changed after testing.
 
-Use the scope checker with an explicit map and base; see [preflight.md](preflight.md). Errors and unsupported claims leave scope unresolved. File ownership is the default; symbol regions are an explicit exception with coordinator-managed integration.
-
-Own tests, fixtures, generated outputs, prompt/tool descriptions and evaluators too. A necessary scope extension is a proposed contract change: ratify or redirect before the worker touches another owner's files.
+Run the scope checker with an explicit map and base ([preflight.md](preflight.md)); errors or unsupported claims leave scope unresolved. Ownership is per file (symbol regions are an explicit exception the lead integrates) and covers tests, fixtures, generated outputs, prompt and tool descriptions and evaluators. A needed scope extension is a contract change: approve or redirect it first.
 
 ## Reconcile meaning
 
-Review producers and consumers together: fields, units, null/error/partial meanings, references, permissions and effects. Missing information must not become a confident zero. Inspect affected registration, descriptions, prompts, notices, rules and expected outcomes.
+Review producers and consumers together: fields, units, null/error/partial meanings, references, permissions, effects. Missing data must not become a confident zero. Check affected registrations, descriptions, prompts, notices, rules and expected outcomes.
 
-Predict regression-marker and fixture changes. Shared marker files have one owner. Do not remove an assertion or expected failure just to get green; verify the business expectation and tested surface.
-
-Regenerate emitted data from combined code and correct inputs. Do not pick one side of conflicting generated data. Reconcile changed test identities and intentional skips; counts can hide replaced or lost coverage.
+Predict marker and fixture changes; a shared marker file has one owner. Never delete an assertion or expected failure to get green. Regenerate emitted data from the combined code and correct inputs instead of picking a side. Reconcile renamed tests and intentional skips; counts hide lost coverage.
 
 ## Verify the combination
 
-Combine candidates in the agreed integration worktree under the existing authorization for Git operations. Run interface checks and required project checks on that source. Reuse unchanged evidence only when relevant dependencies match.
+Combine in the agreed integration worktree and run interface and project checks there. Reuse evidence only when its dependencies are unchanged.
 
-For substantial agentic changes, run reviewed actual-interface scenarios and effect checks through the combined application's real entry/resume routes. Use adaptive persona conversations for conversational surfaces and the actual event/API/CLI interface for other systems. Record source, instance, configuration and fixture identity. Helper tests or separate previews cannot prove the combined route.
+For substantial agent changes, run reviewed scenarios through the combined app's real entry and resume routes and check effects (personas for conversation, the real event/API/CLI otherwise), recording source, instance, configuration and fixture. Helper tests and separate previews do not prove the combined route.
 
-Review and execute before outward-facing release. A local reversible integration candidate is often necessary to test the combination; constructing it does not authorize push, deployment or publication. Present the concrete verified result for any remaining approval.
+A local combined build made for testing does not permit push, deploy or publish; bring the verified result to whoever approves those.
 
-## Reconcile scoped work
+## Close out this run
 
-Run closeout preflight against named task branches and worktrees. With no selectors, repository-wide inventory may include unrelated work; do not call that this task's debt. Conversely, never ignore owned dirty source or a worker tip advancing after the recorded merge.
+Run close-out preflight on this run's named branches and worktrees; without them it sweeps unrelated work too. Never ignore owned uncommitted source or a worker tip that moved after the recorded merge.
 
-Freeze returned candidates or obtain acknowledgement that contributions are final. Re-read scoped tips and verify ancestry in the combined candidate. Preserve interrupted work with provenance; a rescue checkpoint is not accepted implementation.
+Freeze returns (or get them acknowledged final), re-read the tips and verify each is an ancestor of the combined build. Keep interrupted work with provenance; a rescue checkpoint is not accepted work.
 
-Report included revisions, evidence, uncertainty and release state. Code review follows the project's review process; `multi-agent-system-design` owns runtime acceptance; the project's handover record owns continuation. The coordinator remains responsible for acceptance even when agents perform checks.
+Report included revisions, evidence, uncertainty and release state. Code review: **review-changes**. Testing the running app: **multi-agent-system-design**. Handover: **close-out**. The lead owns acceptance even when agents did the checks.

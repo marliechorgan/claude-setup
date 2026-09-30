@@ -1,64 +1,72 @@
 ---
 name: fanout-brief
-description: Coordinate several workers on one arc — parallel Claude subagents, serial build sessions, background or headless build waves and sessions driving a live application. Use for fan out or pan out (sub-agents in parallel), splitting work between workers, ownership and interface contracts, preflight of a shared base, relaying findings to running workers, reviewing worker returns, integrating workstreams and accepting the combined result, and rebriefing work from a previous session. Includes a template for each worker's own brief. Not needed for a single bounded edit or an ordinary answer.
+description: Run several Claude workers on one piece of work and get back a result you can trust — parallel subagents, background agents, a sequence of build sessions, or sessions driving a live app. Use when the user says fan out, split this up, use sub-agents in parallel, run these at the same time, or when a task has independent parts worth doing concurrently; also for deciding who owns which files, checking a shared base before dispatch, relaying a finding to running workers, reviewing what workers returned, and merging their work into one tested result. Each worker's own brief is written with worker-brief. Not for a single bounded edit or an ordinary question.
 ---
 
 # Fanout brief
 
-Coordinate work that returns corrections, usable changes and evidence. A worker may disprove its brief; the coordinator owns the resulting decision and combined outcome. This skill owns the run: what to split, who owns what, dispatch, relaying, integration and acceptance. Write each worker's brief from [the worker brief template](references/worker-brief-template.md).
+You are the lead. You plan, brief, dispatch, relay, recombine and accept. Workers answer to you; the user talks only to you. A worker may prove its brief wrong, which is useful. Accepting the combined result stays with you even when agents did the checking.
 
-## Choose the work before the workers
+## Decide what the user asked for
 
-Select the deliverable from the user's request. A request for a brief or prompts produces a grounded packet without dispatching workers. A request to execute or coordinate work proceeds through dispatch, integration and acceptance within existing authorization. A request to review worker returns starts with their evidence and identifies only the missing work. Do not turn an execution request into a prompt-writing task, or a prompt-writing request into a running job.
+A request for briefs or prompts ends with ready-to-use briefs, not a running job. A request to do the work goes through dispatch, recombination and acceptance. A request to review returns starts from what came back. Do not turn one into another.
 
-State the intended result and the evidence that will establish it. Inspect current code, source material, relevant prior results and unfinished verification. Separate observations from proposed causes and fixes. A missing capability in a report is a question to check, not a fact to propagate.
+## Split by dependency, not by headcount
 
-Map dependencies before splitting. Parallelize independent questions or bounded changes with stable interfaces. Keep tightly coupled changes with one owner or sequence them. Read-only investigators can share a checkout; concurrent builders need isolated worktrees. Name why each worker helps and reserve capacity for review, testing and integration.
+Write down the result and the evidence that will establish it before splitting. Then draw the dependencies:
 
-Use one [work contract](references/work-contract.md) across brief, worker return, integration and handover. Map its fields onto the repo's existing record; do not create another board or schema just to use this skill.
+- **Independent questions or changes with stable interfaces** go in parallel.
+- **Tightly coupled changes** stay with one owner, or run in sequence.
+- **Readers** (investigation, review) can share one checkout. **Builders** each need their own git worktree.
+- Reserve capacity for review, testing and recombination. Filling every slot with builders starves the work that finishes the job.
 
-## Ground the run
+Name what each extra worker buys: separate context, parallel time, or an independent view. If you cannot, use fewer. A one-line fix needs one session and a test.
 
-For a repository build, run the preflight from this skill directory against the actual target tree:
+Work goes out in waves. A **planning** wave (readers, no edits) returns findings and plans. A **build** wave (one job and one worktree each) returns changed code and a report. A **use** wave (testers on one frozen, recombined copy) returns real conversations and findings. Only a build wave has anything to recombine; real bugs from a use wave become the next build wave.
 
-```bash
-bash scripts/fanout-preflight.sh /absolute/repo --test 'the verified baseline command'
-```
+## Ground the run before dispatch
 
-Read [the preflight contract](references/preflight.md) before selecting flags. Replace the example baseline with the repository's verified command. A nonzero exit blocks the claim that supplied checks passed. Omitted or unavailable checks stay unmeasured. A successful command is not proof of acceptance, a running deployment, or complete test coverage.
+Workers inherit your mistakes at scale, so check the base once:
 
-Preserve the report once and give workers its path and relevant observations. Re-run volatile checks when the base, environment, ownership or dependency changes; do not rerun a costly suite on every message. For research outside a repository, record the source inventory and timestamp instead of manufacturing a Git preflight.
+- Open every path you cite. Record the base commit and the verified baseline test command, and whether it passes now.
+- For a repository build, the optional script does this mechanically:
+  ```bash
+  bash scripts/fanout-preflight.sh /absolute/repo --test 'the verified baseline command'
+  ```
+  A nonzero exit blocks any claim that the baseline passes. Exit 0 means the command completed, not that the product works. See [preflight](references/preflight.md) for flags.
+- Give each worker the project rules it needs (the relevant CLAUDE.md lines, conventions, gotchas) inside its brief. A link it cannot read, or does not know it must read, is not a rule it will follow.
+- For research outside a repository, record the source list and the time instead.
 
-Use [grounding and evidence](references/grounding-and-evidence.md) for causal claims, counts and regression checks that travel between workers. Pass the applicable project instructions (the relevant CLAUDE.md rules, conventions and gotchas) as part of each worker's scoped input pack, with their source and permitted roots. A link alone is insufficient when the worker cannot read it or does not know it must.
+Use [grounding and evidence](references/grounding-and-evidence.md) when a cause, count or regression claim will travel between workers.
 
 ## Dispatch the set
 
-Write each brief from [the worker brief template](references/worker-brief-template.md), then read the whole set side by side: every cited path opened, write scopes disjoint, and no two workers sharing a return path. The set adds three things no single brief carries:
+Write each brief with **worker-brief**, then read the whole set side by side. The set carries three things no single brief can:
 
-- **Ownership.** Write scopes are disjoint, and each brief names its neighbours. The worker must not revert others' edits. It obtains coordinator acknowledgement before editing another owner's files or changing a shared contract, and continues independent in-scope work meanwhile.
-- **Interfaces.** One maintained record per shared contract, cited by revision from both briefs, with its producer, consumer and integration owner.
-- **Resources.** A worktree isolates files, not databases, ports, queues, browser tabs or external writes. Allocate those explicitly, along with each worker's own scratch directory and report path.
+- **Ownership.** Write scopes do not overlap, and each brief names its neighbours. A worker never reverts another's edits. It asks you before touching another owner's file or a shared contract, and continues its own work meanwhile.
+- **Interfaces.** Each shared contract (a field, a status value, an API shape) lives in one record, cited by revision from both the producer's and the consumer's brief.
+- **Resources.** A worktree isolates files, not databases, ports, queues, browser tabs or outbound messages. Allocate those explicitly, along with each worker's scratch directory and report path.
 
-Use [execution modes](references/execution-modes.md) for Claude subagents, serial sessions, resource limits and durable reports. Use [live driving](references/live-driving.md) when a session narrates or controls a live application.
+[Execution modes](references/execution-modes.md) covers Claude subagents, worktree isolation, agent teams, background runs and resuming interrupted work. [Live driving](references/live-driving.md) covers a session that operates a running app.
 
 ## Coordinate while work runs
 
-Keep a small run record: task and worker IDs, actual worktrees, pinned bases, ownership, dependencies, contract revision and current status. Match recipients by recorded ID. Relay verified cross-cutting findings with the changed contract revision and request acknowledgement; silence is not agreement. If a change invalidates running work, identify affected evidence and its restart point.
+Keep a small run record: worker IDs, worktrees, base commits, ownership, contract revision and status ([template](references/coordination-doc-template.md)). When a finding affects others, relay it with the changed contract revision and ask for acknowledgement; silence is not agreement. If a change invalidates running work, name what must be redone.
 
-One coordinator owns integration. If another coordinator is active, agree ownership explicitly before overlapping mutations. A Markdown record informs agents; it is not a filesystem lock.
+Use the waiting time for synthesis and dependency work. Do not edit workers' files, poll without reason, or assume an interrupted process finished. Save each report as it arrives, and check that the saved body really is that worker's (its own title or task ID), not just filed under the right heading.
 
-Do useful synthesis and dependency work while workers run. Avoid changing their files, repeated unchanged polling, or assuming an interrupted process completed. Preserve reports and original failures before retrying.
+## Recombine and accept
 
-## Accept, integrate and explain
+Read each worker's diff and evidence against the original acceptance checks, not against its own summary. Reproduce anything disputed and anything high-consequence yourself.
 
-Read worker changes and evidence against the original acceptance cases. Review can be delegated; acceptance responsibility stays with the coordinator. Reproduce disputed results and high-consequence boundaries; reuse trustworthy checks for the same unchanged snapshot instead of blindly repeating everything.
+Recombine one candidate at a time onto a tested base, and run the tests after each. If adding C breaks two tests, look at C or at how C meets A and B. Passing alone is not passing together: the combined build is a new candidate and needs its own run. For an agent or chat product, test the combined app through its real entry point with **multi-agent-system-design**'s testing loop; mocked parts stay named as unverified. For research or documents, reconcile sources, claims and versions, then read the combined deliverable.
 
-For substantial conversational or agentic changes, use `multi-agent-system-design` and its running-application acceptance loop. Independently test each candidate through the real entry/resume routes with controlled state and effect checks. Use a separate adaptive persona tester for conversational surfaces, or the actual event/API/CLI/artifact interface for other systems. Queue testers or test instances when resources are limited. Mocked boundaries remain explicitly unverified.
+[Integration and acceptance](references/integration-and-acceptance.md) has the git steps, the scope checker and how to reconcile producers and consumers.
 
-Use [integration and acceptance](references/integration-and-acceptance.md). For code changes, verify exact returned revisions, reconcile interfaces and changed tests, then exercise the combined application as a new candidate. Recheck scoped branch tips and owned dirty work. For research or artifact work, reconcile sources, claims and versions, then inspect the combined deliverable. Separate worker passes do not establish that the combined result meets the task.
+Keep five words separate in everything you report: **changed, tested, committed, integrated, deployed.** A tested uncommitted change can be ready for approval; a committed one can be missing from the running app. Commits, pushes and anything sent outward follow the user's existing permission; this skill grants none.
 
-Preserve the distinction between changed, tested, committed, integrated and deployed. Commits, pushes, external sends and production effects follow the user's existing authorization; this skill grants none. A tested uncommitted snapshot can be ready for approval. An authorized checkpoint commit preserves work but does not establish acceptance.
+## Finish
 
-Deliver a concise result and evidence locations before optional housekeeping can consume the remaining context: what changed, how it was checked, what remains and who continues it. Correct a bad brief at its source; keep project-specific incidents in the project's own record and reusable mechanisms in these references.
+Deliver the result before housekeeping can eat the remaining context: what changed, how it was checked, what remains and who continues it. Then release what this run acquired (processes, ports, worktrees no longer needed), keeping anything still needed for acceptance. If the work continues, hand over with **close-out**. When a brief turned out wrong, fix the brief template or the project's notes, not just this run.
 
-Once their dependent work is finished, release resources actually acquired for this task using the ownership record. Preserve evidence first; keep or transfer a resource still needed for acceptance or continuation. Follow the cleanup and handoff rules in [execution modes](references/execution-modes.md).
+The [work contract](references/work-contract.md) defines the shared vocabulary (verdicts, candidate identity, status) used across briefs, returns and handovers. Map it onto whatever task tracker the project already has; do not create a new one to use this skill.

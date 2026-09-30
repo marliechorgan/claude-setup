@@ -1,0 +1,14 @@
+{
+  "name": "working-skills",
+  "description": "Free Claude skills for sub-agents, agent apps, careful coding, open-source contributions and human-sounding writing.",
+  "owner": {
+    "name": "Charlie Morgan"
+  },
+  "plugins": [
+    {
+      "name": "working-skills",
+      "source": "./",
+      "description": "Nine skills for doing real work with Claude: brief sub-agents, run several in parallel, design and test agent apps, write and review code without silent failures, wrap up cleanly, contribute to open source, and write messages that sound like you."
+    }
+  ]
+}

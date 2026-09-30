@@ -1,79 +1,81 @@
 # Connect rules to observable behaviour
 
-Use this reference when a rule must remain consistent across agent guidance, code and evaluation, or when a plausible reply is insufficient evidence that a task succeeded. Match verification effort to the change and its consequences.
+A plausible reply is not evidence that a task succeeded.
 
 ## A rule links guidance, enforcement and proof
 
-For a consequential rule, maintain its meaning, source or decision owner, version, scope and the behaviour expected when it applies. Connect that record to the prompt or tool guidance the agent actually receives, the function that enforces the action, and the checks that exercise that function. A long rulebook that never reaches the relevant agent or action is not enforcement.
+A consequential rule has a meaning, owner, version, scope and expected behaviour, linked to the guidance the agent actually receives, the enforcing function and the checks exercising it. A rulebook that never reaches the agent or action enforces nothing.
 
-Illustrative paths for a product-enquiry workflow:
-
-| Rule component | Example link or behaviour |
+| Rule component | Example (product enquiry) |
 | --- | --- |
 | Meaning | Confirm the company before submitting an enquiry. |
-| Agent guidance | `prompts/enquiry_agent.md`: retain the selected product and ask for the missing company detail. |
+| Agent guidance | `prompts/enquiry_agent.md`: keep the selected product, ask for the missing company detail. |
 | Enforcement | `enquiries/submit.py` → `submit_product_enquiry()`: require resolved product and company references. |
-| Regression check | `tests/test_enquiry_submission.py`: ambiguous company produces no enquiry; clarification permits one correct enquiry. |
-| Conversation evidence | Actual messages, selected records, resulting enquiry and submission receipt. |
+| Regression check | `tests/test_enquiry_submission.py`: ambiguous company, no enquiry; after clarification, one correct enquiry. |
+| Conversation evidence | Actual messages, selected records, resulting enquiry, submission receipt. |
 
-These paths are examples. Inspect the real implementation, callers and flow before making claims about existing code. A function definition does not prove that the relevant runtime path calls it. Distinguish “implemented” from “exercised by this run.”
+Paths are illustrative; inspect the real implementation, callers and flow before claiming anything. A defined function isn't proof the runtime calls it: "implemented" is not "exercised by this run".
 
-When a rule changes, update affected guidance, enforcement and expected outcomes together. Preserve an independent check on the interpretation: if the same mistaken brief supplies the implementation and every expected answer, agreement can reproduce the error. Use reviewed business examples, authoritative records or a separate review of the acceptance cases. For a contrasting pair, establish why the business expects different outcomes before deriving assertions from the implementation. A worker should challenge a contradicted assumption with evidence rather than implement it faithfully.
+Change a rule's guidance, enforcement and expected outcomes together, and check the interpretation independently: if one mistaken brief writes both code and expected answers, they agree on the error. Use reviewed business examples, authoritative records or a separate case review; for a contrasting pair, learn why the business expects different outcomes before deriving assertions. Workers challenge contradicted assumptions with evidence.
 
-## Verify the task's positive and negative outcomes
+## Check positive and negative outcomes
 
-Specify the initial state, user intent, expected state transitions and external effects for each case. Include success, ambiguity and relevant interruption paths. Use fresh isolated fixtures where prior state would otherwise produce a false pass. Require useful work to survive a safeguard: blocking an ambiguous-company submission should not discard a resolved product or disable its lookup.
+Each case sets initial state, intent, expected transitions and external effects for success, ambiguity and relevant interruptions, on fresh isolated fixtures where leftover state could fake a pass. Useful work must survive a safeguard: blocking an ambiguous-company submission must not discard the resolved product or its lookup.
 
-Check what the system actually returned and persisted. Names make diagrams readable; stable references and source versions connect the selected records to the write. For the illustrative Northstar case, inspect an enquiry for Northstar Leeds with Racing Fluid 2, rather than asserting only that a generic company record changed. Verify no premature or duplicate enquiry. An issued operation, an accepted write, a stored record and a delivered response are different observations.
+Check what was returned and stored, tied to the selected records by stable references and source versions. For Northstar: one enquiry, Northstar Leeds with Racing Fluid 2, none early or duplicated; not "a company record changed". Issued operation, accepted write, stored record and delivered response are four different observations.
 
-Establish the acceptance oracle through this chain before interpreting a green result:
+Before trusting a green result, check the evidence chain:
 
-| Evidence boundary | What to verify |
+| Link | Verify |
 |---|---|
-| Runtime snapshot | The loaded source, model-client construction, rules and configuration match the intended candidate; name any harness substitutions. |
-| Fixture capability | Required records, permissions, tools and feature conditions exist in this test world. An absent prerequisite can prevent the behavior under test from occurring. |
-| Route reached | The actual request traversed the entry, gate, tool or resume branch being claimed as exercised. |
-| Post-turn state | Inspect state after the tested action and relevant asynchronous completion; a pre-turn snapshot cannot prove the resulting transition. |
-| Delivered surface | Inspect the final message, cards, files or notifications actually delivered after rewrites and transport, rather than an intermediate draft. |
+| Runtime snapshot | Loaded source, model-client construction, rules and config match the build; substitutions named. |
+| Fixture capability | Required records, permissions, tools and feature conditions exist, or the behaviour can't happen. |
+| Route reached | The request went through the entry, gate, tool or resume branch you claim. |
+| Post-turn state | State after the action and any async completion; a pre-turn snapshot proves nothing. |
+| Delivered surface | The message, cards, files or notifications delivered after rewrites and transport, not a draft. |
 
-A break in this chain leaves the claimed behavior unverified even if the harness exits successfully. Diagnose an invalid fixture or substituted path separately from an application defect, then repair the test and exercise the intended behavior. Preserve the failed evidence and the limits of the original claim.
+A break anywhere leaves the behaviour unverified, whatever the exit code. A bad fixture or substituted path is not an app defect: fix the test, exercise the real behaviour, keep the failed evidence and the claim's limits.
 
-Do not derive the expected artefact count from the environment's ability to produce the artefact. If a required PDF cannot render, report that requirement as failed or unverified according to the supported environment contract; silently asserting one fewer output hides the missing feature. Likewise, a conditional assertion that never ran is not passing evidence. Identify skipped or bypassed checks and interpret their consequences.
-
-Where useful for a regression or safeguard, demonstrate that the check catches the defect: reproduce it, deliberately reintroduce it in isolation, or use an input that must trip the guard. Restore the fix and verify the valid path too. This is targeted evidence, not a requirement to mutation-test every low-impact change. A negative result proves little if the relevant branch was never reached.
+- Never lower the expected artefact count to what the environment can produce: a required PDF that can't render is failed or unverified, not one fewer output.
+- An assertion that never ran is not a pass. Name skipped or bypassed checks and what they mean.
+- For a regression or safeguard, prove the check catches the defect (reproduce, reintroduce in isolation, or feed a guard-tripping input), then restore the fix and check the valid path. Targeted, not mutation-testing everything. A negative result means little if the branch never ran.
 
 ## Diagnose boundaries, then compare changes
 
-Trace what crossed each boundary: user input, context supplied to the agent, retrieved candidates, authoritative records, selected references, tool arguments, tool outcomes, persisted effects and final reply. Find the first divergence from the expected path. A downstream refusal may reflect missing evidence upstream; a polished success reply may follow a failed write.
+Trace what crossed each boundary (user input, agent context, retrieved candidates, authoritative records, selected references, tool arguments and outcomes, stored effects, final reply) to the first divergence. A refusal may stem from missing evidence upstream; a polished success may follow a failed write.
 
-Use a targeted replay to test the explanation. Change the suspected cause while keeping the case and relevant conditions comparable. Preserve useful progress and add the demonstrated failure to a durable regression case. If a reply was lost after a possible write, reconcile by a stable operation reference before retrying; an uncertain result is not evidence that nothing happened.
+Test the explanation with a replay changing only the suspected cause, keeping useful progress. After a lost reply to a possible write, reconcile by operation reference before retrying; uncertainty is not evidence nothing happened.
 
-For model or harness comparisons, use the same reviewed outcomes, configuration record and representative cases, including unseen cases and repeated runs where variance matters. Compare accepted task outcomes, total effort or cost, latency, retries and human repair. Do not hide a serious failure class inside an average score or attribute a model difference to a simultaneously changed tool interface. A stronger model is a candidate intervention; a successful replay supports that specific combination, not a universal model ranking.
+Compare models or harnesses on identical reviewed outcomes, configuration and cases, with unseen cases and repeats where variance matters; score accepted outcomes, cost, latency, retries and human repair. Don't let averages bury a serious failure class, or credit the model for a simultaneous tool change. A good replay supports that combination, not a ranking.
 
-## Evaluate the product and the building process
+## Evaluate the product and the build separately
 
-Maintain separate questions and evidence for these layers:
-
-| Layer | What the evaluation establishes |
+| Layer | Shows |
 |---|---|
-| Product | The application's user task completes correctly, with required effects, preserved constraints and acceptable latency. |
-| Development | Workers produce accepted changes; shared interfaces integrate; reviewers find relevant defects; handovers preserve the next action. |
-| Skill bundle | Revised guidance improves those development outcomes or reduces effort without weakening acceptance. |
+| Product | The user's task completes correctly: required effects, constraints kept, acceptable latency. |
+| Build | Workers produce accepted changes; interfaces integrate; reviewers find real defects; handovers keep the next action. |
+| Skill bundle | Revised guidance improves build outcomes or cuts effort without weakening acceptance. |
 
-A good design document does not establish product reliability. Passing component checks does not establish a running conversation or combined application. A complete work contract does not establish a successful implementation. Use the [shared work contract](../../fanout-brief/references/work-contract.md) to carry candidate identity, evidence and acceptance between design, fan-out and close-out.
+Design docs, passing components and complete work contracts don't prove reliability, a running combined app or a working implementation. The [shared work contract](../../fanout-brief/references/work-contract.md) carries build identity, evidence and acceptance from design to close-out.
 
-Start with a small set of representative cases and actual failures. Include both appropriate use and non-use of extra procedure: a small edit, tightly coupled code, independent investigations, a stale worker result, a broken shared interface, a changed tool contract, a missing test instance, an uncertain external write and a resumed session. Select cases relevant to the proposed change rather than executing the whole list on every task.
+Start with a few representative cases and real failures, including where extra procedure is and isn't warranted: a small edit, tightly coupled code, independent investigations, a stale worker result, a broken shared interface, a changed tool contract, a missing test instance, an uncertain external write, a resumed session. Run only the relevant ones.
 
-For a skill revision, compare the previous and proposed guidance against the same inputs, model, permissions, starting state and acceptance rubric. Keep a no-skill baseline where it answers whether the skill adds value. Repeat cases when stochastic variation could change the decision; retain failures and skipped cases. If combining skills introduces a regression, remove or substitute one module at a time to locate the interaction. A single favorable run is preliminary evidence.
+Compare skill revisions on identical inputs, model, permissions, starting state and rubric, plus a no-skill baseline where useful. Repeat cases when randomness could flip the decision; keep failures and skips. If combined skills regress, swap one module at a time. One good run is preliminary.
 
-Assess task correctness and harmful effects first, then time to accepted result, total effort, clarification burden, duplicated work and integration repair. Count the coordinator, testers and rework in the process cost. Do not optimize a shorter run by removing a required user-requested gate. Qualitative criteria need a clear rubric and periodic independent calibration; a generated judge's agreement is not ground truth.
+Rank correctness and harm first, then time to acceptance, effort (including coordinator, testers, rework), clarification burden, duplicated work and integration repair. Never shorten a run by dropping a gate the user asked for.
 
-Calibrate model judges against independently accepted and rejected examples, including contrasting pairs for each important behavior. Report false positives and false negatives by failure class; aggregate agreement can hide a judge that flags honest and dishonest outcomes alike. When calibration is inadequate, run the judge in observe-only mode while reviewed expectations and direct checks govern acceptance. Keep financial and permission invariants in authoritative validation; a fallible style judge must not decide them. A judge that shares the writer's model and context shares its blind spots, so a writer re-reading the rules against its own draft is not an independent check: give the judge its own context, return only what failed with the offending text and a fix, and use a different model family where a miss is costly. Only independent misses multiply down.
+## Model judges
 
-Measure the judge and rewrite loop's additional model calls, total token use, latency and retry depth, including cases it lets through. A one-word verdict can require substantial hidden work. Bound rewrites, inspect the delivered result after them, and recheck substantive meaning and preserved effects when a rewrite can change either. More criticism or more rewrites are not evidence of higher quality.
+- Qualitative criteria need a clear rubric and periodic independent calibration; a judge's agreement is not ground truth.
+- Calibrate against independently accepted and rejected examples, with contrasting pairs per behaviour. Report false positives and negatives by failure class; overall agreement can hide a judge flagging honest and dishonest outcomes alike. Poorly calibrated, it runs observe-only while reviewed expectations and direct checks decide.
+- Financial and permission invariants stay in authoritative validation, never a fallible style judge.
+- A judge sharing the writer's model and context shares its blind spots, as does a writer re-reading its own draft. Give it its own context, have it return only failures with offending text and a fix, and use another model family where a miss is costly. Only independent misses multiply down.
+- Measure the judge-and-rewrite loop's extra calls, tokens, latency, retry depth and misses; a one-word verdict can hide much work. Bound rewrites, inspect the delivered result, recheck meaning and effects a rewrite could change. More criticism isn't more quality.
 
-Keep challenging capability cases separate from regressions that protect behavior already accepted. Measure both finding a successful attempt and succeeding consistently when the product needs repeatability. Isolate fixtures across trials; record infrastructure failure separately from product failure without quietly dropping either from the report.
+## Improve on evidence
 
-Convert a demonstrated failure into a durable case and repair the responsible layer. Useful labels include specification, ownership, stale context, missing evidence, ignored dissent, repeated work, premature completion and incorrect verification. Choose a contract, tool, state, evaluator or environment correction supported by the trace. Add a global instruction only when the evidence supports a general rule.
+Keep hard capability cases apart from regressions protecting accepted behaviour; measure "can succeed" and "succeeds consistently" when repeatability matters. Isolate fixtures between trials; report infrastructure and product failures separately, dropping neither.
 
-Stop when the intended improvement has adequate evidence and no material regression remains. Label static checks, scenario simulations, live application runs and longitudinal comparisons separately. Skill syntax and link validation establish that guidance can load; behavioral effectiveness requires observed task outcomes.
+Turn a demonstrated failure into a durable case and fix the layer the trace implicates: contract, tool, state, evaluator or environment. Useful labels: specification, ownership, stale context, missing evidence, ignored dissent, repeated work, premature completion, incorrect verification. Add a global instruction only for a general rule.
+
+Stop when the improvement has enough evidence and no material regression. Label static checks, simulations, live runs and longitudinal comparisons separately; syntax and link checks show a skill loads, not that it works.

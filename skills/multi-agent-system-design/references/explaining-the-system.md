@@ -1,33 +1,31 @@
-# Explain the system so its meaning is visible
+# Explain the system
 
-Use this reference when presenting a design, writing a technical explanation or creating a diagram. Preserve useful complexity; remove decoding effort.
+For design talks, write-ups and diagrams: keep the useful complexity, remove the decoding effort.
 
 ## Organise around capabilities
 
-Keep runtime architecture distinct from the development sessions building it. Within runtime design, group related decisions: coordinating agent work; retrieving, selecting and submitting data; applying rules and checking outcomes. Put worktree ownership, persona testing and integration in a separate build section. Use section dividers when a long presentation changes capability or level of abstraction, rather than creating a divider for every individual slide.
+Keep the runtime apart from the build that changes it. Group runtime decisions by capability: coordinating agents; retrieving, selecting and submitting data; applying rules and checking outcomes. Worktree ownership, persona testing and integration get their own build section. Divide sections when capability or abstraction level changes, not per slide.
 
-Give each diagram one question to answer. Separate candidate discovery from record selection, and separate a worker's test architecture from an illustrative transcript when showing both would obscure either. A slide should make one claim, develop it in a short lead, and show its mechanism. Move substantial detail into notes or references.
+Each diagram answers one question. Separate candidate discovery from record selection, and a test setup from an example transcript when one would hide the other. One claim per slide, a short lead, then the mechanism; detail goes in notes.
 
-## Choose labels that explain the data
+## Labels that explain the data
 
-Use recognisable examples such as **Blue Fluid**, **Racing Fluid 2**, **Northstar Leeds** and **Northstar Bristol**. Show the relevant catalogue field that supports the choice: a product name alone does not prove suitability. Label fictional attributes and conversations as illustrative.
-
-Friendly display names and stable internal references serve different purposes. Explain once that implementation uses validated references; do not make readers decode arbitrary IDs to follow the diagram. Keep the same names and action semantics throughout. Creating a product enquiry, updating a company record, adding a line to an existing request and placing an order are different effects.
-
-The examples should illustrate a general pattern. Headings can name the capability, while concrete records inside the diagram make it understandable. Do not turn the whole architecture into a special-purpose fluid sales system.
+- Use recognisable example names (**Blue Fluid**, **Racing Fluid 2**, **Northstar Leeds**, **Northstar Bristol**) and show the catalogue field behind the choice; a name alone doesn't prove suitability. Mark invented data and dialogue as illustrative.
+- Show readable names; say once that the code uses validated references, not IDs readers must decode.
+- Keep names and action meanings consistent: creating an enquiry, updating a company record, adding a line to an existing request and placing an order are different effects.
+- Headings name the general capability; the example records inside only illustrate it.
 
 ## Let position and arrows carry meaning
 
-- For a coordinator, put the user message and response on the primary reading path. Put peer specialists beneath it, with separate delegation and return arrows.
-- Use containment to show ownership: each build worker owns a worktree, its running test instance and its isolated test data. Show code on disk and the running process as distinct objects connected by start/deploy/restart.
-- Put an external user reply outside the agent's reasoning box. Otherwise the diagram can suggest the agent invented missing intent.
-- Show shared state before and after a meaningful update. Do not point refreshed consumers back into an unchanged card that still displays unresolved values.
-- Keep a case and its expected outcome on the same visual lane. Show a shared runtime configuration without merging the identity of separate test runs.
-- Label important branches: pass, blocked, unresolved or retry. Return failure evidence to the actor that can repair the cause. Include success exits as well as refinement loops.
-- In conversation testing, draw messages and actual replies between tester and running application. Draw stored effects separately into acceptance checks. A box containing dialogue is a transcript, not the application process.
-
-Do not draw optional retrieval methods as a mandatory serial pipeline. Avoid crossing arrows through captions. Prefer a visible connection with a short label over prose that asks the reader to imagine the connection.
+- Coordinator: user message and response on the main path, specialists beneath, with separate delegation and return arrows.
+- Containment shows ownership: each build worker owns a worktree, its running test instance and its test data. Code on disk and the running process are separate boxes, joined by start/deploy/restart.
+- Put the user's reply outside the agent's reasoning box, or the missing intent looks invented.
+- Show shared state before and after an update; never point refreshed consumers at a stale card still showing unresolved values.
+- A case and its expected outcome share a lane; shared runtime configuration doesn't merge separate test runs.
+- Label branches (pass, blocked, unresolved, retry); route failure evidence to whoever can fix it; draw success exits as well as loops.
+- In conversation testing, messages and real replies run between tester and running app; stored effects feed the acceptance checks separately. A box of dialogue is a transcript, not the application.
+- Don't draw optional retrieval methods as a mandatory pipeline, or arrows through captions. A labelled connection beats prose.
 
 ## Review the rendered result
 
-Inspect diagrams at their intended reading size. Check label fit, text size, branch direction, containment, state transitions and whether the purported evidence is actually connected to the claim. Layout bounds can catch clipping; human review must still catch a misleading arrow or conflated concept. Preserve the requested format and brand rather than imposing a universal diagram library, slide count or style.
+Check at reading size: label fit, text size, branch direction, containment, state transitions, and whether the evidence connects to the claim. Layout checks catch clipping; only a human catches a misleading arrow or merged concepts. Keep the requested format and brand.

@@ -153,11 +153,14 @@ Put durable rules in CLAUDE.md, and keep it short and current. Instructions that
 
 ---
 
-## About this bundle
+## About this guide
 
-This guide is the short version. The two skills in `skills/` are the full method, written for Claude to follow:
+This guide is the short version. The full method is in the skills, written for Claude to follow:
 
-- **`multi-agent-system-design`**: designing and reviewing agent systems (roles, tools, shared state, recovery, verification) and testing a builder's running change with personas.
-- **`fanout-brief`**: running several helpers on one piece of work: splitting it, briefing, ownership, recombining and accepting the result. Includes a worker brief template and optional Git preflight scripts.
+- **`worker-brief`**: the brief for one helper (section 3 of this guide), with a linter that catches dead paths and missing finish lines before you dispatch.
+- **`fanout-brief`**: running several helpers on one piece of work: splitting it, ownership, recombining and accepting the result (sections 1, 4 and 6). Includes optional git preflight scripts.
+- **`multi-agent-system-design`**: designing, debugging and testing agent apps, including the persona and saved-records checks in section 5.
+- **`close-out`**: the logbook and "resume from here" line in section 7.
+- **`code-writing`** and **`review-changes`**: the everyday habits in section 8, plus the traps that make broken code report success.
 
-The restaurant and product examples in both are made up.
+The restaurant and product examples are made up.

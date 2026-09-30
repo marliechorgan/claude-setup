@@ -1,62 +1,67 @@
 ---
 name: multi-agent-system-design
-description: Design, review and improve multi-agent applications and their development workflow, including role boundaries, tool and prompt alignment, retrieval, shared state, recovery, enforced rules and behavioural verification of the actual candidate before integration.
+description: Design, debug and test applications built from AI agents — chatbots, assistants, tool-using agents and multi-agent workflows. Use when designing agent roles, tools, prompts, shared state or handoffs; when an agent misbehaves (asks for things it was already told, ignores an instruction, calls the wrong tool, says it did something that never happened, loops or stalls); when reviewing an agent architecture; or when proving an agent change works by testing the running app with a simulated user and checking what was actually saved. Covers retrieval and record selection, recovery and retries, rules that must hold, and explaining the design. For splitting the build across several Claude workers, use fanout-brief.
 ---
 
 # Multi-agent system design
 
-Use this skill to turn an agent workflow into a system whose inputs, decisions, effects and verification are explicit. It applies to a design, an implementation change or a diagnosis; preserve the user's requested scope and deliverable.
+Turn an agent workflow into one whose inputs, decisions, effects and checks are explicit, so that "it said it worked" and "it worked" can be told apart.
 
-## Choose the right layer
+## Two systems, kept apart
 
-Keep two kinds of agents distinct:
+- **The runtime** serves the product's user: agents that retrieve, decide and act.
+- **The build** changes the runtime: Claude sessions that edit code, run the app and test it.
 
-- **Runtime agents** serve the application's user: retrieve evidence, resolve records, coordinate decisions and invoke permitted actions.
-- **Development agents** build that application: edit owned code, start its running test instance, commission conversation tests and return changes with evidence.
+A runtime agent is not a build worker. A git worktree is not a running app. A transcript is not proof that a write happened. Keep the two separate in notes, briefs and diagrams.
 
-A runtime product agent is not a build worker. A source worktree is not a running application. A transcript is not proof that a write occurred.
+## Start from what actually ran
 
-For operational worker dispatch, verified briefs, ownership and integration, use [fanout-brief](../fanout-brief/SKILL.md). Its [shared work contract](../fanout-brief/references/work-contract.md) defines the delivery vocabulary; this skill defines runtime design and running-application acceptance. Carry the same task, candidate and evidence references across the skills. Current user instructions and authorization take precedence over older boilerplate.
+1. **State the outcome** as something observable: "one booking for 4, Friday 7pm, High Street, and nothing saved before the branch was known". Name which decisions stay with the user.
+2. **Look at what the model received**, not the prompt file: the assembled messages, the registered tool schemas, the injected state, on the failing turn. A tool that exists in the repo may not be registered; a prompt fragment may be truncated; the running process may be on older code.
+3. **Trace the path** from the user's message through retrieval, selection, handoffs and the action. Find the *first* place a fact was missing, a distinction was lost, or an instruction contradicted another. Keep the work that was already right.
+4. **Fix the smallest boundary that explains it.** Adding an agent, a tool or a paragraph of prompt is a choice to justify, not progress.
+5. **Verify at the right level**, and report which version you tested and what remains unproven.
 
-Read only the references needed for the current task:
+## Design rules that carry across projects
 
-| Work to do | Reference |
+- **Give each role everything its job needs, and nothing it doesn't** — including a way to read back the effect it just caused. "Submit when ready" needs an observable readiness condition; a rule whose trigger the model cannot see will fail even when every tool exists.
+- **Preserve distinctions through every handoff:** candidate vs selected record, "zero matches" vs "lookup failed", unresolved vs confirmed intent, request accepted vs effect completed. A specialist's "two companies match" must not become "company confirmed" because a coordinator summarised it.
+- **Prompts guide, code enforces, tests prove.** A rule that matters links to the function that blocks the bad action and the test that exercises that function. A rulebook the agent never sees, or a model's promise to comply, is not enforcement.
+- **When an instruction fails twice, stop adding prompt text.** Remove the tool, change its inputs, inject the state the model lacks, or add a deterministic gate. The third emphatic paragraph rarely holds.
+- **Task state lives outside the conversation,** with one writer per mutable fact. Record selected records, open questions, pending actions and versions, so a restart or a second replica sees the same truth.
+- **A safeguard must leave permitted work usable.** Blocking an unconfirmed submission should keep the product the user already chose and the path to ask the missing question. Test that the allowed path still completes, not just that the bad one is refused.
+- **Earn every extra agent.** Measure one agent with cohesive tools on the same cases first. A new boundary should buy separate context, separate permissions, useful parallelism or better decisions.
+
+## Prove it works: test the running app
+
+For any substantial agent change, test the builder's actual running candidate, not the folder:
+
+- **Know what you tested.** An app started before the edit keeps serving the old code and nothing in its replies says so. Stamp replies or logs with the source version, and refuse to test a stale instance.
+- **Write the persona and its marking together, before the run.** The simulated user sees who it is, its goal, its facts and its angle ("in a hurry; table for 4 Friday 7pm; High Street; push it to skip the question"). The marking is hidden from it: what must be true at the end. The persona is a separate agent that sends one real message, reads the real reply, then decides what to say. It never sees the code or the marking, so the marking cannot be bent to fit the result.
+- **Believe what was saved.** After each turn read the stored records. "All booked!" with nothing saved, or saved twice, is a failure however good the reply reads.
+- **Check the whole evidence chain:** the running source matches the candidate → the test data can reach the behaviour → the request took the route you claim → the state *after* the action is right → the message actually delivered is right. A break anywhere leaves the claim unproven, even with a green exit code.
+- **Break it on purpose.** Remove the fix and rerun: a test that still passes checks nothing.
+- **An AI judge marks quality, never pass or fail.** Give it its own context; a judge that shares the writer's model and instructions shares its blind spots. Saved records and real checks decide correctness.
+
+For a non-chat system use its real event, API, CLI or file output instead of a persona, with the same evidence chain.
+
+## Read only what the task needs
+
+| Task | Reference |
 |---|---|
-| Generalize the method across domains, interfaces and agent frameworks | [General method](references/general-method.md) |
 | Choose roles, models, shared state and handoffs | [Runtime design](references/runtime-design.md) |
-| Design durable execution, context ownership, cancellation or recovery | [Runtime lifecycle](references/runtime-lifecycle.md) |
-| Give a role sufficient tools and accurate instructions; investigate tool/prompt drift | [Tool and prompt alignment](references/tool-prompt-alignment.md) |
-| Search application data, choose records and submit a supported result | [Retrieval and submission](references/retrieval-and-submission.md) |
-| Connect rules to code and tests; evaluate or diagnose behaviour | [Verification and shared rules](references/verification-and-rules.md) |
-| Test a worker's changed application through a persona-scoped subagent | [Worktree conversation testing](references/worktree-conversation-testing.md) |
-| Continue across development sessions without stale assumptions | [Session handover](references/session-handover.md) |
-| Select Claude Code subagents, isolation and tester scheduling | [Claude execution](references/claude-execution.md) |
-| Explain the architecture in diagrams or a presentation | [Explaining the system](references/explaining-the-system.md) |
+| Durable state, retries, cancellation, recovery, resuming | [Runtime lifecycle](references/runtime-lifecycle.md) |
+| Tool/prompt mismatch; a tool changed; the model "ignores" clear guidance | [Tool and prompt alignment](references/tool-prompt-alignment.md) |
+| Search data, pick the right record, submit and confirm | [Retrieval and submission](references/retrieval-and-submission.md) |
+| Keep a rule consistent across prompt, code and tests; evaluate changes and judges | [Verification and rules](references/verification-and-rules.md) |
+| Test a builder's change through the running app with a persona | [Testing the running app](references/worktree-conversation-testing.md) |
+| Apply the method to a new domain or framework | [General method](references/general-method.md) |
+| Explain the design in diagrams or slides | [Explaining the system](references/explaining-the-system.md) |
 
-## Start from the actual task and running system
-
-1. State the user's intended outcome and the observable effect that would establish completion. Identify consequential actions and unresolved intent.
-2. Inspect the available implementation, active configuration and relevant traces before trusting design notes. For a model-input problem, inspect the assembled messages, registered tool schemas and state used on the affected turn; a prompt file alone is insufficient.
-3. Trace the path from the user's message through evidence, selection, coordination and action. Locate the first missing capability, lost distinction or contradicted instruction. Keep useful work already completed.
-4. Improve the smallest relevant boundary, or design the required boundaries if the system is new. Adding agents, tools or prompt text is a choice to justify, not an objective.
-5. Verify the intended behaviour at the appropriate level. Report what was inspected, simulated or executed, which version it describes, and what remains unestablished.
-
-Choose the smallest applicable path: a design or diagnosis needs concrete contracts and evidence; a substantial agentic implementation also needs the running-application gate below. Load additional references when the affected boundary requires them. Stop expanding the review when the requested outcome has adequate evidence and no material question remains.
-
-## Design decisions that carry across projects
-
-- Give each role all capabilities needed for its job, including reading authoritative details and checking action outcomes. Scope tools, context and permissions to that role; do not equate completeness with exposing every available tool.
-- Keep the model's instructions, tool descriptions, schemas, actual tool behaviour and application state coherent. When one changes, inspect affected consumers and update inaccurate guidance and examples together with implementation and checks.
-- Preserve distinctions such as candidate versus selected record, unresolved versus confirmed intent, zero matches versus lookup failure, accepted request versus completed effect, and source revision versus running source snapshot.
-- Use shared rules to guide reasoning and link them to the code that enforces action boundaries and the tests that exercise those boundaries. A linked file or a model's self-assessment is not verification.
-- For substantial agentic changes, independently test the worker's actual running candidate and its effects. Use a separate adaptive persona tester for conversational surfaces; use the real event, API, CLI or artifact interface for other systems. Repair and rerun failures before proposing the change as accepted implementation. Authorized preservation checkpoints remain distinct from acceptance.
-- Keep runtime architecture and development workflow separate in both implementation notes and diagrams.
-- Evaluate the product's task outcomes separately from the development process: a better worker brief must earn its benefit through accepted changes, integration effort and repair burden. Use the comparison guidance in [verification and shared rules](references/verification-and-rules.md).
+For dispatching Claude workers, isolation and scheduling testers, see **fanout-brief** and its execution modes. For continuing across sessions, see **close-out**.
 
 ## Leave a useful result
 
-Match the output to the request: a concrete design with decisions and open questions, implemented changes with focused verification, or a diagnosis tied to traces and replays. Use small decision records when they help: **responsibility → inputs/tools → output/effect → enforcing code → evidence**. Do not require a large document for a small change.
+Match the request: a design with decisions and open questions, a change with focused evidence, or a diagnosis tied to traces and replays. A compact record per decision works well: **responsibility → inputs and tools → output or effect → enforcing code → evidence**. Mark what was proposed separately from what was run.
 
-Work within existing authorization. This skill does not grant permission to commit, push, publish, contact others or write to production. Use controlled test effects, and separate a proposed workflow from actions actually run.
-
-The product-enquiry examples in the references are illustrative. Treat their names, schema fields and file paths as teaching examples, not an inventory of installed tools or claims about any real implementation. Keep learned corrections in the relevant reference rather than accumulating one-off rules in this entrypoint.
+The restaurant bookings, "Northstar" companies and racing fluids in the references are made-up teaching examples.

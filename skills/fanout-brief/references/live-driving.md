@@ -1,24 +1,24 @@
 # Brief a live application run
 
-Establish the actor: the session narrates while the user types, or controls the application through tools. A narrated run needs a guide; an agent-driven run needs a task packet and observed access. Respect existing authorization for sends and test effects.
+Settle who drives. If the session narrates while the user types, write a guide; if it operates the app through tools, write a task brief and confirm access. Sends and test effects stay within existing permissions.
 
-Read the previous successful driving brief and current state. Reuse proven structure; recheck its flow, tools, assumptions and exceptions. Never prescribe a deleted classifier or present historical results as current measurements.
+Read the last successful driving brief and the current state. Reuse its structure; recheck its flow, tools, assumptions and exceptions. Never prescribe a deleted classifier or present old results as current.
 
 Record before the run:
 
 - Outcome, acceptance cases, permitted effects and stop conditions.
-- Actual instance/deployment identity, source and reference-data versions where observable.
-- Transport prerequisites, such as delivery routing or required mentions; verify the first message reaches the intended run.
-- Access to the decisive state/artifact. Surface required human authentication while the human is available; keep credentials out of the brief.
-- Absolute owned evidence paths; run ID → thread ID → tab ID → fixture namespace.
-- Expected differences from the comparable baseline, known limits and what the visible surface cannot establish.
+- The actual instance or deployment, with source and reference-data versions where visible.
+- Transport prerequisites (delivery routing, required mentions); check the first message reaches the intended run.
+- Access to the deciding state or artifact. Get human sign-in done while the person is there; keep credentials out of the brief.
+- Absolute owned evidence paths, and the map run ID → thread ID → tab ID → fixture namespace.
+- Expected differences from the comparable baseline, known limits, and what the visible surface cannot show.
 
-Send one message, read the real reply and choose the next action. Probe phrases are inputs, not guaranteed classifications. Verify the current deterministic decider or use exact historical model failures as probes; inspect reached state. Never author both sides of an exchange as execution evidence.
+Send one message, read the real reply, choose the next move. Probe phrases are inputs, not guaranteed classifications: check the current deterministic decider or replay exact historical model failures, and inspect the state reached. Never write both sides of an exchange and call it evidence.
 
-Announce deliberate adversarial probes when an observing human could mistake them for genuine instructions. Stay inside controlled effects. Reassert the intended tab/thread per action; do not rely on focus.
+Announce adversarial probes a watching human could take for real instructions. Stay inside controlled effects. Re-select the intended tab or thread on every action; do not trust focus.
 
-For silence or human-gate requirements, inventory all relevant posting routes and transitions, including tools, notices and transports. Inspect the event/record, not only absence of visible messages. If the surface cannot observe it, mark the requirement unverified.
+For silence or human-gate requirements, list every route that could post or transition, including tools, notices and transports. Inspect the event or record, not just the absence of visible messages; if the surface cannot observe it, mark it unverified.
 
-Use independent fixtures for parallel runs. A run depending on another run's output is sequential. Shared-deployment concurrency changes timing: compare latency under comparable load, while inspecting behavioural counts and outcomes.
+Parallel runs get independent fixtures; a run that needs another's output is sequential. Shared-deployment concurrency changes timing: compare latency under comparable load, and judge behaviour by counts and outcomes.
 
-Capture full transcripts, cards, artifacts and persisted effects with source/instance identity. Inspect the message actually delivered, not an intermediate draft, and post-action state, not a pre-turn snapshot. A timeout after a possible effect requires reconciliation before retry. Return failures, partial work and a bounded next action; do not silently repair production as a test driver.
+Capture full transcripts, cards, artifacts and saved effects with source and instance identity. Inspect the message actually delivered, not a draft, and post-action state, not a pre-turn snapshot. Reconcile a timeout after a possible effect before retrying. Return failures, partial work and a bounded next step; a test driver does not quietly repair production.

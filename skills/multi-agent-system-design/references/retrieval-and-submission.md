@@ -1,49 +1,47 @@
 # Retrieval, selection and submission
 
-Use this reference when agents find records in application data, select entities and submit the chosen information. Treat the following as logical responsibilities; they need not be separate agents, services or model calls. For role design and tool drift, use [runtime-design.md](runtime-design.md) and [tool-prompt-alignment.md](tool-prompt-alignment.md).
+For agents that find records, pick entities and submit the result. Steps need not be separate agents or calls. Roles and tool drift: [runtime-design.md](runtime-design.md), [tool-prompt-alignment.md](tool-prompt-alignment.md).
 
-## Separate the claims made at each step
+## What each step proves
 
-| Operation | Establishes | Does not establish by itself |
+| Step | Establishes | Does not establish |
 |---|---|---|
-| Search | Potentially relevant candidates from names, aliases or meaning. | Identity, eligibility or authority to act. |
-| Query | Records and relationships satisfying explicit database predicates. | Which entity the user intended. |
-| Match | A supported selection or a clearly unresolved ambiguity. | That every required source field is current and complete. |
-| Retrieve | Authoritative record details, stable references and relevant versions. | That the record satisfies this particular request. |
-| Refine | A useful next query, detail fetch or clarification based on what remains unknown. | Permission to silently weaken a hard requirement. |
+| Search | Possibly relevant candidates from names, aliases or meaning | Identity, eligibility or authority to act |
+| Query | Records and relationships matching explicit predicates | Which entity the user meant |
+| Match | A supported selection, or a clear unresolved ambiguity | That every required field is current and complete |
+| Retrieve | Authoritative details, stable references, versions | That the record fits this request |
+| Refine | The next query, fetch or question, from what is still unknown | Permission to quietly weaken a hard requirement |
 
-The order can vary. An exact, valid identifier can bypass search, and full records may be needed before matching. A domain service can combine several operations. Keep their contracts distinct enough to locate remaining uncertainty.
+Order varies: an exact ID skips search, matching may need full records first, one service can combine steps. Keep the contracts distinct enough to locate uncertainty.
 
 ## Build a scoped shortlist
 
-Use exact fields where known, lexical search for names and descriptive terms, and semantic retrieval where meaning-based discovery helps. Choose or combine these methods rather than requiring every query to run all three. Apply access scope before restricted records reach model context. Apply available hard filters and preserve constraints that still require authoritative fields to verify.
+- Exact fields where known, lexical search for names and descriptions, semantic retrieval where meaning helps; mix as needed.
+- Apply access scope before restricted records reach the model, plus the hard filters you can; keep constraints that need authoritative fields for later.
+- Top-k caps the results; ranking is relevance, not identity, suitability or uniqueness. A lone result can be wrong; the right one can be outside the shown results. Check what reached the model (ranking, truncation), not whether the database holds the answer.
+- "No matches" (revise the query or ask a focused question) is not "denied" or "unavailable" (unresolved). Neither licenses inventing a record. Bound investigation and retries, and report when stuck.
 
-Top-k is a limit on returned candidates. Ranking is relevance, not proof of identity, suitability or uniqueness. A single returned candidate can be wrong, and the correct answer can be outside the displayed results. Inspect what reached the model, including ranking and truncation, rather than merely confirming that the database contains the answer.
+## Select from full records
 
-A successful query with no matches differs from a denied call or an unavailable source. No matches may justify a revised query or a focused question. Failure leaves the result unresolved. Do not interpret either as permission to invent a record. Bound investigation and retries; report the unresolved issue when the system cannot make useful progress.
+Decide from authoritative records, not snippets: the authorised details this operation needs, not every column. Keep source, version and effective period where they matter; fresh data can still be expired or inapplicable.
 
-## Use full records to support selection
+Missing data is not missing intent. A tool can fetch a company's city; it can't tell which of two cities the user meant. Ask the smallest deciding question; keep finished work.
 
-Fetch the authoritative business records needed for the decision, rather than relying on search snippets. “Full” means the authorized record details required by the operation, not every physical database column. Preserve source, version and business effective period where relevant; recently fetched data can still be expired or inapplicable.
+People see readable names; tools carry stable references, because names collide and change. Carry the selection reason and evidence through handoffs, or a summary turns a ranked candidate into a confirmed one.
 
-Distinguish missing record data from missing user intent. A tool can retrieve a company's city. It cannot determine which of two cities the user meant when no other evidence resolves that ambiguity. Ask the smallest discriminating question and retain independently completed work.
+## Example: a product enquiry
 
-Use readable names in diagrams and user responses, while tools carry stable record references beneath them. Names alone can collide or change. Preserve the selection reason and relevant evidence across handoffs, so a ranked candidate does not become a confirmed destination through summarization.
+"Find a racing fluid and submit a product enquiry for Northstar." The made-up catalogue returns Blue Fluid and Racing Fluid 2, whose records say general use and racing use. Racing Fluid 2 fits because of that field, not its name.
 
-## Illustrative product-enquiry task
+Company records hold Northstar Leeds and Northstar Bristol, so ask "Leeds or Bristol?", keeping Racing Fluid 2 selected. "Leeds" resolves it, and the selected records supply the enquiry.
 
-The user asks: “Find a racing fluid and submit a product enquiry for Northstar.” The fictional catalogue returns Blue Fluid and Racing Fluid 2. Their full records state general use and racing use respectively. Racing Fluid 2 meets the requested use; the selection depends on that field, not just its name.
+Don't generalise it: never turn an enquiry into an order, infer quantities or assume an existing draft.
 
-Company records contain Northstar Leeds and Northstar Bristol. Ask “Leeds or Bristol?” A reply of “Leeds” resolves Northstar Leeds. Retain Racing Fluid 2 while this question is pending. The selected product and company records then supply the enquiry inputs.
+## Submit and check the effect
 
-This is an example, not a universal workflow. Do not turn an enquiry into an order, infer quantities or assume an existing draft. Adapt acceptance to the actual business operation and established authorization.
+- At the execution boundary, validate the selected references, constraints and permission to submit. While the company is unresolved, code blocks submission but keeps the product and the clarification path. Prompts guide; code enforces.
+- Keep selected, submitted and confirmed apart. Inspect the stored enquiry and receipt: right product, right company, right count. A "submitted" reply proves nothing stored.
+- If the response is lost after submission, reconcile via a stable operation reference before retrying. Use idempotency keys where supported, report partial completion honestly, never promise exactly-once.
+- Test completion, ambiguity, blocked submission and uncertain completion against independently reviewed outcomes, with controlled effects. Testing this does not permit submitting real enquiries.
 
-## Submit and verify the effect
-
-At the execution boundary, validate the selected references, applicable constraints and permission to submit. If the company is unresolved, block that submission while retaining the product selection and clarification path. Prompt guidance helps the agent reason; code enforces the action conditions.
-
-Keep selected, submitted and confirmed states separate. Inspect the persisted enquiry and available receipt: the intended product, intended company and intended number of effects must agree with the task. An application's “submitted” message alone does not prove the stored result.
-
-If a response is lost after submission, reconcile through a stable operation or resource reference before retrying. Use idempotency support where available and describe partial completion honestly; do not promise universal exactly-once execution. Test ordinary completion, ambiguity, blocked submission and uncertain completion against independently reviewed outcomes using controlled effects. Testing or documenting this workflow does not grant permission to submit real enquiries.
-
-For an asynchronous operation, a valid sequence is **accepted + operation reference → supported status lookup → persisted result + required links verified → completion response**. Keep pending, failed and unknown states explicit. If an external service completes while the application fails to attach the result to the intended company, repair or reconcile the missing linkage; creating the external effect again can duplicate it. Verify that the role can perform the required reconciliation reads, not only initiate the action.
+Asynchronous operations: **accepted + operation reference → status lookup → stored result with links checked → completion response**. Keep pending, failed and unknown distinct. If the external service completed but the app failed to link the result to the right company, repair the link; repeating the effect can duplicate it. The role needs the reconciliation reads, not only the action.

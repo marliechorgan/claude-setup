@@ -1,47 +1,43 @@
 # Runtime lifecycle and recovery
 
-Use this reference when agents share mutable state, continue after interruption, wait for people, perform consequential effects or run beyond one request. Select the relevant mechanisms; an ephemeral read-only query does not need a distributed workflow engine.
+For shared state, resumption, waits, consequential effects and long runs. Not for read-only queries.
 
-## Establish authority and transitions
+## Authority and transitions
 
-Define the task's authoritative record separately from conversation history and source records. Give each mutable field or aggregate one writer, or an explicit conflict-resolution policy. A result carries the task reference, producing role, input-state version, source references and outcome status. Reject, refresh or reconcile a result whose input assumptions no longer hold.
+The task's authoritative record is neither the conversation nor the source records. Each mutable field or aggregate has one writer or an explicit conflict policy. Results carry task reference, producer, input-state version, source references and status; reject, refresh or reconcile one whose inputs changed.
 
-Record only states that the application can distinguish and enforce. A useful starting vocabulary is `ready`, `running`, `waiting`, `completed`, `failed`, `cancelled` and `unknown-effect`; use separate operation records when an external action can outlive the task. Specify the allowed transition, responsible actor and evidence for it. A tool call returning successfully does not establish that the task's acceptance conditions hold.
+Record only states the app can distinguish and enforce, such as `ready`, `running`, `waiting`, `completed`, `failed`, `cancelled`, `unknown-effect`. An external action that can outlive the task gets an operation record. Each transition has an owner and evidence; a tool's success doesn't satisfy acceptance.
 
-For each mutating boundary, answer:
+For each boundary that writes, decide:
 
-| Contract | Decision to make |
-|---|---|
-| Preconditions | Which identity, tenant, intent, source versions and permissions must still hold at execution? |
-| Write ownership | Which component commits the transition, and how does it detect concurrent or stale updates? |
-| Operation identity | Which stable reference identifies this intended effect across retries and reconciliation? |
-| Completion | Which persisted result or receipt proves the effect and required relationships exist? |
-| Recovery | Which failures permit retry, reconciliation, compensation or escalation? Who owns that choice? |
+- **Preconditions** still true at execution: identity, tenant, intent, source versions, permissions.
+- **Write ownership:** who commits, and how stale or concurrent updates are caught.
+- **Operation identity:** a stable reference for the effect across retries and reconciliation.
+- **Completion:** the stored result or receipt proving the effect and its links.
+- **Recovery:** which failures get retry, reconciliation, compensation or escalation, and who decides.
 
-Use existing transaction, conditional-write or queue mechanisms where they fit. Keep authorization attached to the permitted operation and scope; changing the payload, tenant or destination requires re-evaluating its preconditions. Worker text must not upgrade its own authority.
+Authorisation is per operation and scope: a changed payload, tenant or destination re-opens preconditions. Worker text can't raise its own authority.
 
-## Make resumption safe
+## Safe resumption
 
-Persist completed results, pending operation references, unresolved intent and the next useful step at meaningful boundaries. Identify the replay boundary of the actual framework: restarting a node or activity can repeat earlier I/O. A checkpoint is useful only when its storage and recovery behavior match the deployment's failure modes.
+- At meaningful boundaries, persist results, pending operation references, unresolved intent and next step. Know the replay boundary: restarting a node or activity can repeat earlier I/O. A checkpoint must survive the deployment's real failure modes.
+- One layer owns each operation's retries, or provider, client and orchestrator retries multiply. Retry transient reads within budget; after a write that may have landed, reconcile by operation reference first.
+- Tie an idempotency key to the intended effect, reuse it within the attempt, and define what a changed payload does. State deduplication retention and the real delivery guarantee; never promise exactly-once.
+- Cancellation stops new work and propagates to active branches where supported; accepted effects may still finish, so reconcile and report partial completion. Compensation is a separate authorised action. Plan for late results, lost workers, lease expiry and duplicate delivery.
+- A parallel join names required branches, useful partial results, a deadline and who resolves a failed branch. Keep finished work; after refreshing volatile state, resume from the first unresolved dependency, not from scratch or an old summary.
 
-Give retry ownership to one layer for each operation; account for provider, client and orchestrator retries to avoid multiplication. Retry a transient read within its budget. After a possibly completed write, reconcile by stable operation reference before retrying. Use an idempotency key tied to the intended effect when supported; preserve it for the same attempt and define what happens when the payload changes. Specify deduplication retention where it affects guarantees. State the real delivery guarantee rather than promising universal exactly-once effects.
+## Context that stays useful
 
-Cancellation stops new work and propagates to active branches where supported. Already accepted effects may still finish. Reconcile them and report partial completion; compensation is a separate authorized action, not an assumption that cancellation rewinds the world. Define how to handle late worker results, lost workers, lease expiry and duplicate delivery when those conditions can occur.
+Conversation, task state, retrieved evidence and learned guidance each get a scope, writer, retention and refresh rule. Fetch current facts by reference, with provenance and effective dates.
 
-For a parallel join, state which branches are required, which partial results are useful, the deadline, and who resolves a failed branch. Preserve completed independent work. Resume from the first unresolved dependency after refreshing volatile state, rather than rediscovering everything or trusting an old summary blindly.
+Handoffs and compacted context keep objective, constraints, selected records, open decisions, operation references and evidence links; transcripts go to retrievable files. Summaries must not turn uncertainty into confirmation. If continuity matters, test resuming from real compacted or restored context.
 
-## Keep context useful and current
+Promote a lesson only after checking outcome and scope; one task's observation isn't global policy. Conflicting or stale guidance needs an owner and correction path. Shared memory enforces tenant and permission boundaries on write and read.
 
-Distinguish working conversation, authoritative task state, retrieved evidence and durable learned guidance. Decide their scope, writer, retention and refresh conditions. Retrieve current facts by reference when needed; keep source provenance and effective dates with facts whose meaning depends on them.
+## Limits and observability
 
-A handoff or compacted context preserves objective, constraints, selected records, unresolved decisions, operation references and evidence links. Put verbose transcripts in retrievable artifacts. Do not allow summarization to turn uncertainty into confirmation. Test resumption from the actual compacted or restored context for a workflow that depends on long-term continuity.
+Limit elapsed time, tool and model work, concurrent branches, retries and external effects. Reserve capacity for joining, outcome checks and recovery so a stalled branch can't take every slot. At a limit, keep useful state and return an explicit incomplete or pending result.
 
-Promote a lesson only after checking its supporting outcome and applicability; task-specific observations should not silently become global policy. Conflicting or obsolete guidance needs an owner and a correction path. Shared memory must respect tenant and permission boundaries at both write and read time.
+Traces correlate task, agent-call, operation and source-state references and record dispatch, transitions, retries, waits and completion evidence, without unneeded sensitive data. Measure accepted outcomes, latency, resource use, duplicate or wrong effects and human repair; don't let averages hide a serious failure class.
 
-## Bound and observe execution
-
-Set limits appropriate to the service: elapsed time, tool/model work, concurrent branches, retries and allowed external effects. Reserve capacity for joining, outcome verification and recovery. A stalled branch should not exhaust every slot needed to finish or diagnose the task. On exhaustion, preserve useful state and return an explicit incomplete or pending result.
-
-Correlate task, agent invocation, operation and source-state references through traces. Record branch dispatch, state transitions, retry decisions, waits and completion evidence without retaining unnecessary sensitive content. Measure accepted outcomes, latency, total resource use, duplicate or incorrect effects and human repair; averages should not conceal a serious failure class.
-
-Before claiming recovery, exercise the relevant cut: worker loss, stale return, duplicate message, timeout before a write, lost receipt after a write, cancellation or restart during a wait. Verify both the recovered result and absence of unintended effects. A documented recovery path that was not exercised remains a design claim.
+Before claiming recovery, exercise the cut: worker loss, stale return, duplicate message, timeout before a write, lost receipt after a write, cancellation or restart mid-wait. Check the recovered result and any unintended effects. Unexercised recovery is a design claim.
