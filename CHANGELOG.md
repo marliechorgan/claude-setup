@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 (skills)
+- The fanout preflight falls back to the system `python3` when no virtual environment is active.
+- The brief linter's tests run on Linux, where temporary folders live under `/tmp`.
+
 ## 1.3.0 (skills) · 0.1.1 (safety)
 - Repository renamed to `claude-setup`; the skills plugin is now called `skills` (`/plugin install skills@claude-setup`).
 - Both plugins now live under `plugins/`, so installing one copies only that plugin.
