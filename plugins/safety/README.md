@@ -5,8 +5,8 @@ Hooks that stop an agent doing damage on your machine, a test kit to check them,
 ## Install
 
 ```
-/plugin marketplace add marliechorgan/skills
-/plugin install safety@marliechorgan-skills
+/plugin marketplace add marliechorgan/claude-setup
+/plugin install safety@claude-setup
 ```
 
 Then read the "How to set it up well" section below: the defaults are sensible, but a plugin's hooks can be switched off by a determined agent, and the managed install closes that.
@@ -43,7 +43,7 @@ No single control is enough. These are the layers, weakest first, and what each 
 
 **5. The agent can switch hooks off, unless they're managed.** A session can start a child `claude` that doesn't load your user settings (`--setting-sources`), pass `--settings '{"disableAllHooks":true}'`, or simply edit `~/.claude/settings.json`. Claude Code's docs say **managed settings** still apply in all those cases, and a hook also inherits whatever environment it's started with (a fake `python3` on `PATH`, `BASH_ENV`, `PYTHONPATH`). On macOS, [managed/](managed/) installs these guards as managed settings with admin rights and runs them through a launcher that clears those variables. `config-guard` also stops the agent editing the settings files in the first place.
 
-**6. Keep secrets out of files the agent reads.** A `.env` in the project is one `cat` away from the conversation. Keep keys in the macOS Keychain or a password manager and load them into the environment of the process that needs them, never into a prompt. For signing an agent into websites, 1Password's agentic autofill fills the page without the password ever reaching the model (see the `browser-automation` skill in this marketplace's `working-skills` plugin).
+**6. Keep secrets out of files the agent reads.** A `.env` in the project is one `cat` away from the conversation. Keep keys in the macOS Keychain or a password manager and load them into the environment of the process that needs them, never into a prompt. For signing an agent into websites, 1Password's agentic autofill fills the page without the password ever reaching the model (see the `browser-automation` skill in this marketplace's `skills` plugin).
 
 **7. Split identities in the browser.** An agent holding your logged-in cookies that reads an untrusted web page is the exact shape of prompt-injection attacks on AI browsers. Use a separate, logged-out browser for general browsing and research, and your real profile only for specific tasks on sites you know.
 
@@ -51,7 +51,7 @@ No single control is enough. These are the layers, weakest first, and what each 
 
 **9. Test your guards like an attacker, and for over-blocking.** A guard that passes its own tests can still miss a reshaped command, and a guard that blocks ordinary work gets switched off by its owner. The [test kit](test-kit/) probes any guard with dozens of disguised forms (reporting HOLES and OVER-BLOCKS), and replays your own past commands through an old and a new version so you can see what a change would have blocked.
 
-**10. Know what guards can't do.** An agent that can write and run code can in principle do anything your user account can; guards raise the cost and catch the common and the accidental. For untrusted work (a stranger's repository, a scraped page you'll act on), use a container or a separate machine account. When you clone someone else's repo, rename its `CLAUDE.md`, `AGENTS.md` and `.claude/` before working in it (the `oss-contribute` skill in the `working-skills` plugin does this), because they load as instructions.
+**10. Know what guards can't do.** An agent that can write and run code can in principle do anything your user account can; guards raise the cost and catch the common and the accidental. For untrusted work (a stranger's repository, a scraped page you'll act on), use a container or a separate machine account. When you clone someone else's repo, rename its `CLAUDE.md`, `AGENTS.md` and `.claude/` before working in it (the `oss-contribute` skill in the `skills` plugin does this), because they load as instructions.
 
 ## Known limits
 

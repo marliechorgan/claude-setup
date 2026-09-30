@@ -1,0 +1,26 @@
+name: checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skills (frontmatter, links, bundled tests)
+        run: python3 tools/build.py
+      - name: Guard cases
+        run: python3 plugins/safety/tests/run_cases.py
+      - name: Guard wrapper
+        run: python3 plugins/safety/tests/test_guard_run.py
+      - name: Evasion probe (must find no holes)
+        run: |
+          cd plugins/safety
+          python3 test-kit/probe.py --guard guards/command-guard.sh --guard guards/config-guard.sh --guard guards/egress-guard.sh --guard guards/git-guard.sh --guard guards/listen-bind-guard.sh | tee probe.out
+          grep -q "0 HOLES | 0 OVER-BLOCKS" probe.out

@@ -47,7 +47,7 @@ Write each brief with **worker-brief**, then read the whole set side by side. Th
 - **Interfaces.** Each shared contract (a field, a status value, an API shape) lives in one record, cited by revision from both the producer's and the consumer's brief.
 - **Resources.** A worktree isolates files, not databases, ports, queues, browser tabs or outbound messages. Allocate those explicitly, along with each worker's scratch directory and report path.
 
-[Execution modes](references/execution-modes.md) covers Claude subagents, worktree isolation, agent teams, background runs and resuming interrupted work. [Live driving](references/live-driving.md) covers a session that operates a running app.
+The bundled **worker** agent runs one briefed build job in its own git worktree and reports under the fixed headings; **researcher** and **reviewer** cover read-only questions and the independent check. [Execution modes](references/execution-modes.md) covers Claude subagents, worktree isolation, agent teams, background runs and resuming interrupted work. [Live driving](references/live-driving.md) covers a session that operates a running app.
 
 ## Coordinate while work runs
 

@@ -3,7 +3,7 @@
 
   python3 tools/build.py          check only (exit 1 on any problem)
   python3 tools/build.py --zip    check, then write dist/<skill>.zip (one skill per zip, for
-                                  claude.ai upload) and dist/working-skills-all.zip
+                                  claude.ai upload) and dist/skills-plugin.zip
 
 Checks: frontmatter uses only the keys claude.ai upload accepts; name is lowercase-hyphen,
 at most 64 characters, matches its folder and avoids reserved words; description is 1-1024
@@ -17,7 +17,8 @@ import sys
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKILLS = os.path.join(ROOT, "skills")
+PLUGIN = os.path.join(ROOT, "plugins", "skills")
+SKILLS = os.path.join(PLUGIN, "skills")
 ALLOWED = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
@@ -112,14 +113,14 @@ def main(argv):
         for n in names:
             with zipfile.ZipFile(os.path.join(dist, f"{n}.zip"), "w", zipfile.ZIP_DEFLATED) as z:
                 add_tree(z, os.path.join(SKILLS, n), n)
-        with zipfile.ZipFile(os.path.join(dist, "working-skills-all.zip"), "w", zipfile.ZIP_DEFLATED) as z:
-            for top in ("README.md", "GUIDE.md", "LICENSE", ".claude-plugin"):
-                p = os.path.join(ROOT, top)
+        with zipfile.ZipFile(os.path.join(dist, "skills-plugin.zip"), "w", zipfile.ZIP_DEFLATED) as z:
+            for top in ("GUIDE.md", "LICENSE", ".claude-plugin", "agents"):
+                p = os.path.join(PLUGIN, top)
                 if os.path.isdir(p):
-                    add_tree(z, p, os.path.join("working-skills", top))
+                    add_tree(z, p, os.path.join("skills", top))
                 elif os.path.exists(p):
-                    z.write(p, os.path.join("working-skills", top))
-            add_tree(z, SKILLS, os.path.join("working-skills", "skills"))
+                    z.write(p, os.path.join("skills", top))
+            add_tree(z, SKILLS, os.path.join("skills", "skills"))
         print(f"wrote {len(names) + 1} zips to {os.path.relpath(dist, ROOT)}/")
     return 0
 
