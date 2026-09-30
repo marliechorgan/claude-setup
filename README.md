@@ -1,6 +1,6 @@
 # Skills
 
-Nine Claude skills for doing real work with AI: briefing sub-agents, running several at once, building and testing agent apps, writing and reviewing code that doesn't fail silently, wrapping up a session cleanly, contributing to open source, and writing messages that sound like you rather than like a chatbot.
+Ten Claude skills and a browser agent for doing real work with AI: briefing sub-agents, running several at once, building and testing agent apps, driving a browser and signing in safely, writing and reviewing code that doesn't fail silently, wrapping up a session cleanly, contributing to open source, and writing messages that sound like you rather than like a chatbot.
 
 Free to use, change and share (MIT). Each skill ships with an eval that compares Claude with and without it, so you can check the claims below on your own machine.
 
@@ -16,6 +16,7 @@ Free to use, change and share (MIT). Each skill ships with an eval that compares
 | `worker-brief` | Handing any job to a sub-agent or another session. Includes a linter for briefs | Claude Code |
 | `fanout-brief` | Running several sub-agents in parallel on one job and getting back one tested result | Claude Code |
 | `multi-agent-system-design` | Designing, debugging or testing a chatbot or agent app, including testing it with a simulated user and checking what was actually saved | Claude Code |
+| `browser-automation` | Anything done in a browser with Claude: reading pages reliably, forms that actually save, several sub-agents on one browser, signing in with 1Password without the password reaching the model | Claude Code, Claude desktop |
 | `oss-contribute` | Going from "never opened this repo" to a reviewable pull request in one session, safely | Claude Code |
 
 Start with **[GUIDE.md](GUIDE.md)** if you build with Claude Code: it's the plain-English version of the multi-agent skills, with one running example. The skills themselves are written for Claude to follow, so they're denser.
@@ -46,6 +47,7 @@ Skills are then available as `/working-skills:write-human` and so on, and Claude
 - **The scripts are optional** and use only the Python standard library: `worker-brief/scripts/brief_lint.py` (checks a brief for dead paths, missing acceptance, clashing report paths), `write-human/scripts/draft_lint.py` (flags em dashes, stock phrases and stale "tomorrow"s in drafts), and `fanout-brief/scripts/` (git preflight and ownership checks). Each has its own test suite.
 - **Make `code-writing` stick.** Claude often skips a skill for a task it thinks is quick, and in our tests it never loaded `code-writing` on its own. Add one line to your `CLAUDE.md`: `Use the code-writing skill before changing any code.`
 - **Tune the triggers.** If a skill fires too often or not enough, edit its `description:` line. That line is all Claude sees before deciding to use it.
+- **The `browser-worker` agent** comes with the plugin: a sub-agent that reads one page in your logged-in Chrome in its own tab, so several can run at once. It can't sign in, submit or buy.
 - **The examples are made up.** The restaurant bookings, "Northstar" companies and racing fluids are teaching examples.
 
 ## Check it yourself

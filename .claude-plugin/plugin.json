@@ -1,8 +1,17 @@
 {
   "name": "working-skills",
-  "description": "Nine skills for doing real work with Claude: brief sub-agents, run several in parallel, design and test agent apps, write and review code without silent failures, wrap up cleanly, contribute to open source, and write messages that sound like you.",
-  "version": "1.0.0",
-  "author": { "name": "Charlie Morgan" },
+  "description": "Ten skills and a browser agent for doing real work with Claude: brief sub-agents, run several in parallel, design and test agent apps, drive a browser and sign in safely, write and review code without silent failures, wrap up cleanly, contribute to open source, and write messages that sound like you.",
+  "version": "1.1.0",
+  "author": {
+    "name": "Charlie Morgan"
+  },
   "license": "MIT",
-  "keywords": ["subagents", "multi-agent", "code-review", "writing", "open-source", "evals"]
+  "keywords": [
+    "subagents",
+    "multi-agent",
+    "code-review",
+    "writing",
+    "open-source",
+    "evals"
+  ]
 }
