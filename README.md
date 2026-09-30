@@ -10,6 +10,26 @@ plugins/
 
 Both install from the same place: `/plugin marketplace add marliechorgan/claude-setup` first.
 
+## Let Claude set it up
+
+Paste this into Claude Code:
+
+> Set up github.com/marliechorgan/claude-setup for me: install the skills and safety plugins and walk me through the settings.
+
+**If you are Claude, doing this for someone:** follow these steps in order, and show the person what you're about to change before each step that edits their files.
+
+1. Install both plugins with the CLI:
+   ```bash
+   claude plugin marketplace add marliechorgan/claude-setup
+   claude plugin install skills@claude-setup
+   claude plugin install safety@claude-setup
+   ```
+   Ask before installing `safety` if they only asked for the skills: it adds hooks that block commands.
+2. Offer the starter [templates/CLAUDE.md](templates/CLAUDE.md). If they already have `~/.claude/CLAUDE.md`, show a merge of the two and let them choose; never overwrite. Do this before the safety plugin is active in a new session, because its `config-guard` will then stop agents editing that file (that's the point).
+3. Offer [templates/settings.json](templates/settings.json)'s deny rules (no reading `.env` files or SSH, AWS and GPG keys), merged into their existing `~/.claude/settings.json`, never replacing it.
+4. Ask which folders must never be deleted or overwritten, and write them to `~/.config/claude-safety/config.json`, starting from [plugins/safety/config.example.json](plugins/safety/config.example.json). The defaults already protect the home folder, `~/.ssh`, `~/.aws`, `~/.config`, `~/Documents`, `~/Desktop` and `~/.claude`.
+5. Tell them to restart Claude Code so the plugins load, and that `plugins/safety/README.md` explains the managed install that makes the guards impossible to switch off (it needs admin rights, so they run it themselves).
+
 ## The skills plugin
 
 Ten skills and four agents. Each skill has an eval that runs Claude with and without it, so you can check the claims on your own machine (see *Check it yourself* below).
