@@ -1,0 +1,4 @@
+{
+  "protected_paths": ["~", "~/.ssh", "~/.gnupg", "~/.aws", "~/.config", "~/Documents", "~/Desktop", "~/Library", "~/.claude", "~/Projects/keep"],
+  "egress_allowed_hosts": ["api.github.com"]
+}

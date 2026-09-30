@@ -1,0 +1,67 @@
+{
+  "protected_paths": [
+    "~",
+    "~/.ssh",
+    "~/.gnupg",
+    "~/.aws",
+    "~/.config",
+    "~/Documents",
+    "~/Desktop",
+    "~/Library",
+    "~/.claude"
+  ],
+  "delete_allowed_roots": [
+    "$CWD",
+    "$TMPDIR",
+    "/tmp",
+    "/private/tmp"
+  ],
+  "control_files": [
+    "~/.claude/settings.json",
+    "~/.claude/settings.local.json",
+    "~/.claude/CLAUDE.md",
+    "~/.claude/hooks",
+    "~/.claude/agents",
+    "~/.claude/skills",
+    "~/.zshrc",
+    "~/.bashrc",
+    "~/.bash_profile",
+    "~/.profile",
+    "~/.zshenv",
+    "~/.zprofile",
+    "~/.ssh",
+    "~/.gnupg",
+    "~/.gitconfig",
+    "~/.config/git",
+    "~/.config/fish",
+    "~/.config/gh/hosts.yml",
+    ".claude/settings.json",
+    ".claude/settings.local.json",
+    ".git/hooks",
+    ".git/config"
+  ],
+  "secret_patterns": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "id_rsa*",
+    "id_ed25519*",
+    ".netrc",
+    ".npmrc",
+    ".pypirc",
+    "credentials*",
+    "*.p12",
+    "*.pfx",
+    "*.jks",
+    "*.kdbx",
+    "*.keychain-db",
+    "*.ovpn",
+    "secring*"
+  ],
+  "egress_allowed_hosts": [
+    "api.github.com",
+    "registry.npmjs.org",
+    "pypi.org"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "marliechorgan-skills",
-  "description": "Free Claude skills for sub-agents, agent apps, careful coding, open-source contributions and human-sounding writing.",
+  "description": "Free Claude skills and safety guards: sub-agents, agent apps, careful coding, browser automation, open-source contributions, human-sounding writing, and hooks that stop an agent doing damage.",
   "owner": {
     "name": "Charlie Morgan"
   },
@@ -9,6 +9,11 @@
       "name": "working-skills",
       "source": "./",
       "description": "Ten skills and a browser agent for doing real work with Claude: brief sub-agents, run several in parallel, design and test agent apps, drive a browser and sign in safely, write and review code without silent failures, wrap up cleanly, contribute to open source, and write messages that sound like you."
+    },
+    {
+      "name": "safety",
+      "source": "./plugins/safety",
+      "description": "Guards for Claude Code that block destructive commands, edits to the agent's own settings and secrets, data leaving your machine, destructive git, network-exposed dev servers and hidden instructions in web content. Includes a test kit and a macOS managed-settings installer."
     }
   ]
 }

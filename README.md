@@ -41,6 +41,16 @@ Skills are then available as `/working-skills:write-human` and so on, and Claude
 
 **By hand:** copy folders from `skills/` into `~/.claude/skills/` (all projects) or a repo's `.claude/skills/` (that project only).
 
+## Safety guards (separate, optional)
+
+The same marketplace has a second plugin, `safety`: hooks that stop an agent deleting files outside its folder, rewriting its own settings, sending your data out, destroying git work or exposing servers to the network, plus a test kit and a plain-English guide to the layers that actually hold. It's separate because hooks run on every command and block things, so it should be a deliberate choice:
+
+```
+/plugin install safety@marliechorgan-skills
+```
+
+Read [plugins/safety/README.md](plugins/safety/README.md) first.
+
 ## Good to know
 
 - **Scale it to the job.** A one-line fix needs one session and a test, not a fleet of agents. The skills say so, and the eval `small-edit-no-fanout` checks they stay out of the way.

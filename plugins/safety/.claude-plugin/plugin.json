@@ -1,0 +1,16 @@
+{
+  "name": "safety",
+  "description": "Guards for Claude Code that block destructive commands, edits to the agent's own settings and secrets, data leaving your machine, destructive git, network-exposed dev servers and hidden instructions in web content. Includes a test kit and a macOS managed-settings installer.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Charlie Morgan"
+  },
+  "license": "MIT AND AGPL-3.0-or-later",
+  "keywords": [
+    "security",
+    "hooks",
+    "guardrails",
+    "claude-code",
+    "safety"
+  ]
+}

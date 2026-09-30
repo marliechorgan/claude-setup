@@ -1,0 +1,43 @@
+#!/bin/bash -p
+# managed-guard: run one of the safety plugin's guards from its root-owned copy, in a rebuilt
+# environment. install.sh renders this file into @ROOT_DIR@ next to root-owned copies of the
+# plugin's guards/ and lib/. managed-settings.json calls it in exec form (command + args), so no
+# shell runs before it.
+#
+# Why the environment is rebuilt: a hook inherits the environment of the session that runs it,
+# and a session can launch a child `claude` with any environment it likes. Passed through as-is,
+# that environment could steer a guard: a different python3 early on PATH, a HOME that moves the
+# protected folders, BASH_ENV or ENV code that runs before the guard, PYTHONPATH modules that
+# shadow the standard library, or exported shell functions. So `env -i` starts from nothing and
+# only the names below get through, and `bash -p` stops this file and the wrapper from reading
+# BASH_ENV, ENV or inherited functions.
+
+D="@ROOT_DIR@"
+case "$1" in
+  ""|.*|*[!A-Za-z0-9._-]*) echo "BLOCKED by managed-guard: '$1' is not a guard name." >&2; exit 2 ;;
+esac
+if [ ! -x "@PYDIR@/python3" ]; then
+  echo "managed-guard: @PYDIR@/python3 is missing, so the managed copy of $1 did not run" \
+       "(the plugin's own copy still does). Reinstall the Command Line Tools" \
+       "(xcode-select --install), then run install.sh --verify." >&2
+  exit 1
+fi
+# Kept from the session: the project folder Claude Code sets, and the unattended flag, which can
+# only make a guard stricter.
+keep=()
+for v in CLAUDE_PROJECT_DIR CLAUDE_SAFETY_UNATTENDED; do
+  eval "[ -n \"\${$v+x}\" ]" && keep+=("$v=${!v}")
+done
+# Guards run python with -I -S, but a guard that runs `python3 -c` from the session's folder would
+# still put that folder first on sys.path, so run from the root-owned folder instead. Guards take
+# the session's folder from the payload's cwd.
+cd "$D" || { echo "managed-guard: cannot enter $D, so the managed copy of $1 did not run." >&2; exit 1; }
+[ -f "$D/guards/$1" ] || { echo "managed-guard: $1 is not installed in $D/guards; re-run install.sh" >&2; exit 1; }
+# A repository's own .git/config can name a program git runs (core.fsmonitor). Command-scope
+# config outranks the repository's, so a guard that calls git cannot be made to run it.
+exec /usr/bin/env -i ${keep[@]+"${keep[@]}"} PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1 \
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false \
+  HOME="@HOME@" PATH="@PYDIR@:/usr/bin:/bin:/usr/sbin:/sbin" \
+  TMPDIR="$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)" \
+  CLAUDE_SAFETY_CONFIG="$D/config.json" CLAUDE_SAFETY_LOG_DIR="@LOGDIR@" \
+  /bin/bash -p "$D/guards/guard-run.sh" "$D/guards/$1"

@@ -1,0 +1,975 @@
+[
+ {
+  "name": "reset --hard",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "discards uncommitted work"
+ },
+ {
+  "name": "reset --hard to a ref",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --hard origin/main"
+   }
+  },
+  "expect": "block",
+  "why": "discards uncommitted work"
+ },
+ {
+  "name": "reset abbreviated --har",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --har HEAD~1"
+   }
+  },
+  "expect": "block",
+  "why": "git accepts unambiguous abbreviations"
+ },
+ {
+  "name": "reset split quotes",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git \"re\"set --hard"
+   }
+  },
+  "expect": "block",
+  "why": "dequoted like the shell"
+ },
+ {
+  "name": "reset single-quoted",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git 'reset' '--hard'"
+   }
+  },
+  "expect": "block",
+  "why": "dequoted like the shell"
+ },
+ {
+  "name": "reset with -C and -c",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git -C $CWD/app -c color.ui=never reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "global options skipped"
+ },
+ {
+  "name": "reset with env prefix",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "GIT_DIR=$CWD/.git GIT_WORK_TREE=$CWD git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "env prefix"
+ },
+ {
+  "name": "reset in a chain",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "cd $CWD && git fetch && git reset --hard @{u}"
+   }
+  },
+  "expect": "block",
+  "why": "chained"
+ },
+ {
+  "name": "reset in subshell",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "(cd $CWD/app; git reset --hard)"
+   }
+  },
+  "expect": "block",
+  "why": "subshell"
+ },
+ {
+  "name": "reset in command substitution",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "echo $(git reset --hard)"
+   }
+  },
+  "expect": "block",
+  "why": "command substitution"
+ },
+ {
+  "name": "reset in backticks",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "echo `git reset --hard`"
+   }
+  },
+  "expect": "block",
+  "why": "backticks"
+ },
+ {
+  "name": "reset via bash -c",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "bash -c 'cd app && git reset --hard'"
+   }
+  },
+  "expect": "block",
+  "why": "nested shell"
+ },
+ {
+  "name": "reset via eval",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "eval \"git reset --hard\""
+   }
+  },
+  "expect": "block",
+  "why": "eval"
+ },
+ {
+  "name": "reset via sudo",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "sudo -u build git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "wrapper"
+ },
+ {
+  "name": "reset via xargs",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "ls -d */ | xargs -I{} git -C {} reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "xargs wrapper"
+ },
+ {
+  "name": "reset via absolute path",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "/usr/bin/git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "path to git"
+ },
+ {
+  "name": "reset via backslash",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "\\git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "alias bypass spelling"
+ },
+ {
+  "name": "reset via -c alias",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git -c alias.undo='reset --hard' undo"
+   }
+  },
+  "expect": "block",
+  "why": "alias defined inline"
+ },
+ {
+  "name": "reset via shell alias",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git -c alias.x='!git reset --hard' x"
+   }
+  },
+  "expect": "block",
+  "why": "shell alias defined inline"
+ },
+ {
+  "name": "reset via env config alias",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.x GIT_CONFIG_VALUE_0='reset --hard' git x"
+   }
+  },
+  "expect": "block",
+  "why": "alias defined in the environment"
+ },
+ {
+  "name": "reset heredoc to bash",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "bash <<'EOF'\ngit reset --hard\nEOF"
+   }
+  },
+  "expect": "block",
+  "why": "heredoc body runs"
+ },
+ {
+  "name": "reset before a broken line",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --hard\necho \"unterminated"
+   }
+  },
+  "expect": "block",
+  "why": "the shell runs line 1 before failing on line 2"
+ },
+ {
+  "name": "broken quoting on one line",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --hard \"unterminated"
+   }
+  },
+  "expect": "allow",
+  "why": "the shell runs nothing"
+ },
+ {
+  "name": "reset --soft",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --soft HEAD~1"
+   }
+  },
+  "expect": "allow",
+  "why": "keeps work"
+ },
+ {
+  "name": "reset (mixed)",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset HEAD~1"
+   }
+  },
+  "expect": "allow",
+  "why": "keeps work"
+ },
+ {
+  "name": "reset --keep",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset --keep origin/main"
+   }
+  },
+  "expect": "allow",
+  "why": "refuses to overwrite changes"
+ },
+ {
+  "name": "reset a file",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git reset -- src/app.py"
+   }
+  },
+  "expect": "allow",
+  "why": "unstage only"
+ },
+ {
+  "name": "clean -f",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -f"
+   }
+  },
+  "expect": "block",
+  "why": "deletes untracked files"
+ },
+ {
+  "name": "clean -fd",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -fd"
+   }
+  },
+  "expect": "block",
+  "why": "combined flags"
+ },
+ {
+  "name": "clean -xdf",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -xdf"
+   }
+  },
+  "expect": "block",
+  "why": "f anywhere in the cluster"
+ },
+ {
+  "name": "clean -d -f -x",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -d -f -x"
+   }
+  },
+  "expect": "block",
+  "why": "separate flags"
+ },
+ {
+  "name": "clean --force",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean --force -d"
+   }
+  },
+  "expect": "block",
+  "why": "long flag"
+ },
+ {
+  "name": "clean requireForce off",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git -c clean.requireForce=false clean -d"
+   }
+  },
+  "expect": "block",
+  "why": "force by config"
+ },
+ {
+  "name": "clean dry run",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -nd"
+   }
+  },
+  "expect": "allow",
+  "why": "dry run deletes nothing"
+ },
+ {
+  "name": "clean -fn dry run",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git clean -fdn"
+   }
+  },
+  "expect": "allow",
+  "why": "dry run wins"
+ },
+ {
+  "name": "checkout -- .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout -- ."
+   }
+  },
+  "expect": "block",
+  "why": "whole tree"
+ },
+ {
+  "name": "checkout .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout ."
+   }
+  },
+  "expect": "block",
+  "why": "whole tree"
+ },
+ {
+  "name": "checkout HEAD -- .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout HEAD -- ."
+   }
+  },
+  "expect": "block",
+  "why": "whole tree"
+ },
+ {
+  "name": "checkout -- :/",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout -- :/"
+   }
+  },
+  "expect": "block",
+  "why": "top-level pathspec"
+ },
+ {
+  "name": "checkout -f branch",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout -f main"
+   }
+  },
+  "expect": "block",
+  "why": "discards changes to switch"
+ },
+ {
+  "name": "checkout branch",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout main"
+   }
+  },
+  "expect": "allow",
+  "why": "branch switch keeps changes"
+ },
+ {
+  "name": "checkout -b",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout -b feature/login"
+   }
+  },
+  "expect": "allow",
+  "why": "new branch"
+ },
+ {
+  "name": "checkout one file",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git checkout -- src/app.py"
+   }
+  },
+  "expect": "allow",
+  "why": "named file, deliberate"
+ },
+ {
+  "name": "restore .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git restore ."
+   }
+  },
+  "expect": "block",
+  "why": "whole tree"
+ },
+ {
+  "name": "restore --worktree --staged .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git restore --source=HEAD --staged --worktree ."
+   }
+  },
+  "expect": "block",
+  "why": "working tree included"
+ },
+ {
+  "name": "restore --staged .",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git restore --staged ."
+   }
+  },
+  "expect": "allow",
+  "why": "unstage only"
+ },
+ {
+  "name": "restore one file",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git restore src/app.py"
+   }
+  },
+  "expect": "allow",
+  "why": "named file"
+ },
+ {
+  "name": "switch --discard-changes",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git switch --discard-changes main"
+   }
+  },
+  "expect": "block",
+  "why": "discards changes"
+ },
+ {
+  "name": "switch -c",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git switch -c feature/x"
+   }
+  },
+  "expect": "allow",
+  "why": "new branch"
+ },
+ {
+  "name": "stash drop",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash drop"
+   }
+  },
+  "expect": "block",
+  "why": "deletes stashed work"
+ },
+ {
+  "name": "stash drop index",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash drop stash@{2}"
+   }
+  },
+  "expect": "block",
+  "why": "deletes stashed work"
+ },
+ {
+  "name": "stash clear",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash clear"
+   }
+  },
+  "expect": "block",
+  "why": "deletes all stashes"
+ },
+ {
+  "name": "stash push",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash push -u -m 'wip'"
+   }
+  },
+  "expect": "allow",
+  "why": "saves work"
+ },
+ {
+  "name": "stash pop",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash pop"
+   }
+  },
+  "expect": "allow",
+  "why": "restores work"
+ },
+ {
+  "name": "stash list",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git stash list"
+   }
+  },
+  "expect": "allow",
+  "why": "read-only"
+ },
+ {
+  "name": "push --force",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push --force origin main"
+   }
+  },
+  "expect": "block",
+  "why": "overwrites remote"
+ },
+ {
+  "name": "push -f",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push -f"
+   }
+  },
+  "expect": "block",
+  "why": "overwrites remote"
+ },
+ {
+  "name": "push -uf",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push -uf origin feature"
+   }
+  },
+  "expect": "block",
+  "why": "f in a cluster"
+ },
+ {
+  "name": "push +refspec",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push origin +main"
+   }
+  },
+  "expect": "block",
+  "why": "plus refspec forces"
+ },
+ {
+  "name": "push --mirror",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push --mirror backup"
+   }
+  },
+  "expect": "block",
+  "why": "mirror forces every ref"
+ },
+ {
+  "name": "push force and lease",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push --force-with-lease --force"
+   }
+  },
+  "expect": "block",
+  "why": "--force wins"
+ },
+ {
+  "name": "push --force-with-lease",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push --force-with-lease origin feature"
+   }
+  },
+  "expect": "allow",
+  "why": "safe force"
+ },
+ {
+  "name": "push -u",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push -u origin feature"
+   }
+  },
+  "expect": "allow",
+  "why": "ordinary push"
+ },
+ {
+  "name": "push",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git push"
+   }
+  },
+  "expect": "allow",
+  "why": "ordinary push"
+ },
+ {
+  "name": "branch -D",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git branch -D old-feature"
+   }
+  },
+  "expect": "block",
+  "why": "deletes unmerged work"
+ },
+ {
+  "name": "branch --delete --force",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git branch --delete --force old"
+   }
+  },
+  "expect": "block",
+  "why": "same as -D"
+ },
+ {
+  "name": "branch -d -f",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git branch -d -f old"
+   }
+  },
+  "expect": "block",
+  "why": "same as -D"
+ },
+ {
+  "name": "branch -d",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git branch -d merged-feature"
+   }
+  },
+  "expect": "allow",
+  "why": "refuses unmerged"
+ },
+ {
+  "name": "branch -M",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git branch -M main"
+   }
+  },
+  "expect": "allow",
+  "why": "rename"
+ },
+ {
+  "name": "update-ref -d",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git update-ref -d refs/heads/old"
+   }
+  },
+  "expect": "block",
+  "why": "raw ref delete"
+ },
+ {
+  "name": "update-ref set",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git update-ref refs/heads/x HEAD"
+   }
+  },
+  "expect": "allow",
+  "why": "not a delete"
+ },
+ {
+  "name": "filter-branch",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git filter-branch --tree-filter 'rm -f secrets.txt' HEAD"
+   }
+  },
+  "expect": "block",
+  "why": "history rewrite"
+ },
+ {
+  "name": "filter-repo",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git filter-repo --path secrets.txt --invert-paths"
+   }
+  },
+  "expect": "block",
+  "why": "history rewrite"
+ },
+ {
+  "name": "git-filter-repo binary",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git-filter-repo --path x --invert-paths"
+   }
+  },
+  "expect": "block",
+  "why": "history rewrite"
+ },
+ {
+  "name": "status",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git status --short"
+   }
+  },
+  "expect": "allow",
+  "why": "read-only"
+ },
+ {
+  "name": "diff",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git diff HEAD~1 -- src"
+   }
+  },
+  "expect": "allow",
+  "why": "read-only"
+ },
+ {
+  "name": "commit",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git add -A && git commit -m 'reset --hard handling'"
+   }
+  },
+  "expect": "allow",
+  "why": "message text is not a command"
+ },
+ {
+  "name": "pull",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git pull --rebase"
+   }
+  },
+  "expect": "allow",
+  "why": "ordinary"
+ },
+ {
+  "name": "fetch",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git fetch --all --prune"
+   }
+  },
+  "expect": "allow",
+  "why": "ordinary"
+ },
+ {
+  "name": "log",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git log --oneline -20"
+   }
+  },
+  "expect": "allow",
+  "why": "read-only"
+ },
+ {
+  "name": "echo the command",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "echo 'never run git reset --hard'"
+   }
+  },
+  "expect": "allow",
+  "why": "quoted text"
+ },
+ {
+  "name": "heredoc to a file",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "cat > $CWD/NOTES.md <<'EOF'\ngit reset --hard\ngit push --force\nEOF"
+   }
+  },
+  "expect": "allow",
+  "why": "heredoc body is text"
+ },
+ {
+  "name": "comment line",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "# git reset --hard\ngit status"
+   }
+  },
+  "expect": "allow",
+  "why": "comment"
+ },
+ {
+  "name": "grep for it",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "grep -rn 'push --force' $CWD"
+   }
+  },
+  "expect": "allow",
+  "why": "searching"
+ },
+ {
+  "name": "rm unrelated",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -f $CWD/build.log"
+   }
+  },
+  "expect": "allow",
+  "why": "not git; another guard's job"
+ },
+ {
+  "name": "non-Bash tool",
+  "payload": {
+   "tool_name": "Edit",
+   "tool_input": {
+    "file_path": "$CWD/run.sh",
+    "old_string": "a",
+    "new_string": "git reset --hard"
+   }
+  },
+  "expect": "allow",
+  "why": "only Bash is judged"
+ },
+ {
+  "name": "override when attended",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='user asked to discard the experiment' git reset --hard"
+   }
+  },
+  "expect": "allow",
+  "why": "a person let it through"
+ },
+ {
+  "name": "override refused unattended",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='cleanup' git reset --hard"
+   }
+  },
+  "expect": "block",
+  "why": "nobody is there to mean it",
+  "env": {
+   "CLAUDE_SAFETY_UNATTENDED": "1"
+  }
+ }
+]

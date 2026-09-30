@@ -1,0 +1,65 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["command-guard.sh"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["config-guard.sh"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["egress-guard.sh"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["git-guard.sh"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["listen-bind-guard.sh"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["config-guard.sh"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "WebFetch|WebSearch|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Library/Application Support/ClaudeCode/claude-safety/managed-guard",
+            "args": ["ingress-guard.sh"],
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
