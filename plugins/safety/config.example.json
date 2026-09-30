@@ -23,6 +23,8 @@
     "~/.claude/hooks",
     "~/.claude/agents",
     "~/.claude/skills",
+    "~/.claude/plugins",
+    "~/.config/claude-safety",
     "~/.zshrc",
     "~/.bashrc",
     "~/.bash_profile",

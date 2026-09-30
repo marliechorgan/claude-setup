@@ -17,7 +17,7 @@ DEFAULTS = {
     "delete_allowed_roots": ["$CWD", "$TMPDIR", "/tmp", "/private/tmp"],
     "control_files": ["~/.claude/settings.json", "~/.claude/settings.local.json",
                       "~/.claude/CLAUDE.md", "~/.claude/hooks", "~/.claude/agents",
-                      "~/.claude/skills", "~/.zshrc", "~/.bashrc", "~/.bash_profile",
+                      "~/.claude/skills", "~/.claude/plugins", "~/.config/claude-safety", "~/.zshrc", "~/.bashrc", "~/.bash_profile",
                       "~/.profile", "~/.zshenv", "~/.zprofile", "~/.ssh", "~/.gnupg",
                       "~/.gitconfig", "~/.config/git", "~/.config/fish", "~/.config/gh/hosts.yml",
                       ".claude/settings.json", ".claude/settings.local.json", ".git/hooks",

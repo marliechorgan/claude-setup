@@ -18,14 +18,15 @@ Paste this into Claude Code:
 
 **If you are Claude, doing this for someone:** follow these steps in order, and show the person what you're about to change before each step that edits their files.
 
+0. Check first: list any skills they already have with the same names (`ls ~/.claude/skills`), and ask whether any of their own scripts or agents edit files under `~/.claude` (settings, hooks, skills). Once the safety plugin is on, agents can't edit those, so tell them which of their workflows that would stop.
 1. Install both plugins with the CLI:
    ```bash
    claude plugin marketplace add marliechorgan/claude-setup
    claude plugin install skills@claude-setup
    claude plugin install safety@claude-setup
    ```
-   Ask before installing `safety` if they only asked for the skills: it adds hooks that block commands.
-2. Offer the starter [templates/CLAUDE.md](templates/CLAUDE.md). If they already have `~/.claude/CLAUDE.md`, show a merge of the two and let them choose; never overwrite. Do this before the safety plugin is active in a new session, because its `config-guard` will then stop agents editing that file (that's the point).
+   Ask before installing `safety` if they only asked for the skills: it adds hooks that block commands. The plugins load when Claude Code next starts, so do steps 2 to 4 in this session, before the restart: afterwards the guards will stop an agent editing those files.
+2. Offer the starter [templates/CLAUDE.md](templates/CLAUDE.md). If they already have `~/.claude/CLAUDE.md`, show a merge of the two and let them choose; never overwrite.
 3. Offer [templates/settings.json](templates/settings.json)'s deny rules (no reading `.env` files or SSH, AWS and GPG keys), merged into their existing `~/.claude/settings.json`, never replacing it.
 4. Ask which folders must never be deleted or overwritten, and write them to `~/.config/claude-safety/config.json`, starting from [plugins/safety/config.example.json](plugins/safety/config.example.json). The defaults already protect the home folder, `~/.ssh`, `~/.aws`, `~/.config`, `~/Documents`, `~/Desktop` and `~/.claude`.
 5. Tell them to restart Claude Code so the plugins load, and that `plugins/safety/README.md` explains the managed install that makes the guards impossible to switch off (it needs admin rights, so they run it themselves).

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 (safety)
+- The guards now protect their own settings (`~/.config/claude-safety`) and the installed plugins (`~/.claude/plugins`), so an agent can't loosen or blank them.
+- README: paste one sentence into Claude Code and it sets everything up, following step-by-step instructions written for it.
+
 ## 1.3.1 (skills)
 - The fanout preflight falls back to the system `python3` when no virtual environment is active.
 - The brief linter's tests run on Linux, where temporary folders live under `/tmp`.
