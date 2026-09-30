@@ -44,6 +44,7 @@ Skills are then available as `/working-skills:write-human` and so on, and Claude
 
 - **Scale it to the job.** A one-line fix needs one session and a test, not a fleet of agents. The skills say so, and the eval `small-edit-no-fanout` checks they stay out of the way.
 - **The scripts are optional** and use only the Python standard library: `worker-brief/scripts/brief_lint.py` (checks a brief for dead paths, missing acceptance, clashing report paths), `write-human/scripts/draft_lint.py` (flags em dashes, stock phrases and stale "tomorrow"s in drafts), and `fanout-brief/scripts/` (git preflight and ownership checks). Each has its own test suite.
+- **Make `code-writing` stick.** Claude often skips a skill for a task it thinks is quick, and in our tests it never loaded `code-writing` on its own. Add one line to your `CLAUDE.md`: `Use the code-writing skill before changing any code.`
 - **Tune the triggers.** If a skill fires too often or not enough, edit its `description:` line. That line is all Claude sees before deciding to use it.
 - **The examples are made up.** The restaurant bookings, "Northstar" companies and racing fluids are teaching examples.
 
