@@ -1,4 +1,4 @@
-# Working skills
+# Skills
 
 Nine Claude skills for doing real work with AI: briefing sub-agents, running several at once, building and testing agent apps, writing and reviewing code that doesn't fail silently, wrapping up a session cleanly, contributing to open source, and writing messages that sound like you rather than like a chatbot.
 
@@ -25,16 +25,16 @@ Start with **[GUIDE.md](GUIDE.md)** if you build with Claude Code: it's the plai
 **Claude Code (recommended):**
 
 ```
-/plugin marketplace add OWNER/working-skills
-/plugin install working-skills@working-skills
+/plugin marketplace add marliechorgan/skills
+/plugin install working-skills@marliechorgan-skills
 ```
 
 Skills are then available as `/working-skills:write-human` and so on, and Claude uses them on its own when your request matches.
 
 **Claude app or desktop (Pro and above):**
 
-- Whole pack: *Customize → Plugins → Add → Add marketplace*, enter `OWNER/working-skills`. Or *Upload plugin* with `working-skills-all.zip`.
-- One skill: turn on *Settings → Capabilities → Code execution and file creation*, then *Customize → Skills → + → Upload a skill* with that skill's zip from the release (for example `write-human.zip`).
+- Whole pack: *Customize → Plugins → Add → Add marketplace*, enter `marliechorgan/skills`. Or *Upload plugin* with `working-skills-all.zip` from the [latest release](https://github.com/marliechorgan/skills/releases/latest).
+- One skill: turn on *Settings → Capabilities → Code execution and file creation*, then *Customize → Skills → + → Upload a skill* with that skill's zip from the [latest release](https://github.com/marliechorgan/skills/releases/latest) (for example `write-human.zip`).
 
 **Other tools (Codex, Cursor, Gemini CLI and others that read the Agent Skills format):** copy the folders from `skills/` into `~/.agents/skills/` (or the tool's own skills folder). Only the `name`, `description` and `license` fields are used, so they carry over.
 
