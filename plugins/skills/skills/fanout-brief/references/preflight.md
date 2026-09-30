@@ -2,7 +2,7 @@
 
 `scripts/fanout-preflight.sh` measures a Git snapshot; `scripts/scope_check.py` checks a committed lane diff against its ownership row. Neither judges the product, takes a lease or authorizes publication.
 
-The shell entrypoint uses an activated Python virtual environment, else `FANOUT_VENV`, the tree's `.venv` or `venv`, then `~/.venv` or `~/venv`. It needs only the standard library and Git. Activate it yourself for the scope checker and regression suite.
+The shell entrypoint uses an activated Python virtual environment, else `FANOUT_VENV`, the tree's `.venv` or `venv`, then `~/.venv` or `~/venv`, and otherwise the system `python3`. It needs only the standard library and Git, so no virtual environment is required.
 
 ## Dispatch
 

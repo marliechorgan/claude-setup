@@ -16,8 +16,9 @@ if [ -z "${VIRTUAL_ENV:-}" ]; then
       fi
     done
   fi
-  if [ -z "$FANOUT_ACTIVE" ]; then
-    echo "UNKNOWN runtime: activate a Python virtual environment or set FANOUT_VENV." >&2
+  # No virtual environment: the checks use only the standard library, so the system python3 is fine.
+  if [ -z "$FANOUT_ACTIVE" ] && ! command -v python3 >/dev/null 2>&1; then
+    echo "UNKNOWN runtime: python3 not found; install Python 3 or set FANOUT_VENV." >&2
     exit 2
   fi
 fi

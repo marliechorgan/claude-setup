@@ -35,7 +35,13 @@ def run(args, cwd, stdin=None, home=None):
 
 class LintCase(unittest.TestCase):
     def setUp(self):
-        self._td = tempfile.TemporaryDirectory()
+        # The lint deliberately skips paths under /tmp, which is where Linux puts temp dirs,
+        # so build the fixtures somewhere else there.
+        base = None
+        if os.path.realpath(tempfile.gettempdir()).startswith(("/tmp", "/private/tmp", "/var/tmp")):
+            base = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".test-tmp")
+            os.makedirs(base, exist_ok=True)
+        self._td = tempfile.TemporaryDirectory(dir=base)
         self.root = Path(self._td.name).resolve()
         (self.root / "src").mkdir()
         (self.root / "out").mkdir()

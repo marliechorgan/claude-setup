@@ -22,7 +22,7 @@ SKILLS = os.path.join(PLUGIN, "skills")
 ALLOWED = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
-SKIP_ZIP = {".DS_Store", "__pycache__"}
+SKIP_ZIP = {".DS_Store", "__pycache__", ".test-tmp"}
 
 
 def frontmatter(text):
