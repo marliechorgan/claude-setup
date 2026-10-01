@@ -27,7 +27,7 @@ Every block tells Claude what to do instead, so the work carries on safely rathe
 
 **Letting one command through.** A blocked command can be re-run with the prefix `CLAUDE_GUARD_OVERRIDE='why' `, and the reason is logged. Be clear about what this is: Claude writes the commands, so it can add the prefix too. It's a logged speed bump that makes the agent stop and state a reason, not a lock. It is never accepted for the agent's own settings, hooks or instructions (config-guard), or for the hard floors (protected folders, disks, backups). To refuse all overrides, set `CLAUDE_SAFETY_UNATTENDED=1`, which is also the right setting for scheduled and headless runs.
 
-**Settings.** Copy `config.example.json` to `~/.config/claude-safety/config.json` and edit it: the folders that must never be deleted, where deletes are fine, your agent's control files, secret file patterns, and hosts data may be sent to. See [CONTRACT.md](CONTRACT.md).
+**Settings.** Copy `config.example.json` to `~/.config/claude-safety/config.json` and edit it: the folders that must never be deleted, where deletes are fine, your agent's control files, secret file patterns, and hosts data may be sent to. The example allows no upload hosts: add one only when the agent genuinely needs to send data there, because a code-hosting or package API also accepts uploads (allowing `api.github.com` lets an agent post any file to a public gist). See [CONTRACT.md](CONTRACT.md).
 
 ## How to set it up well: the layers
 
@@ -60,6 +60,7 @@ No single control is enough. These are the layers, weakest first, and what each 
 - **Scripting other apps.** On macOS an agent could ask Terminal or another app to run a command via AppleScript, outside Claude's own tools. These guards don't cover that; don't grant Claude automation permission over Terminal.
 - **Docker ports.** `docker run -p 5432:5432` is blocked because Docker publishes to every network interface by default. Use `-p 127.0.0.1:5432:5432`.
 - **A short secret in a short URL** can still leave through `egress-guard`; long query strings are only blocked in unattended mode.
+- **Publishing tools.** `git push` (other than a force-push), `npm publish` and `twine upload` are not judged by these guards, and `gh` commands that post text (a gist, an issue, a comment, a release) are blocked only in unattended mode. If an agent can reach publishing credentials, deny those commands in your Claude Code permissions or keep the credentials off the machine.
 
 ## Test it
 

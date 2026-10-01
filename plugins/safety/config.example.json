@@ -61,9 +61,5 @@
     "*.ovpn",
     "secring*"
   ],
-  "egress_allowed_hosts": [
-    "api.github.com",
-    "registry.npmjs.org",
-    "pypi.org"
-  ]
+  "egress_allowed_hosts": []
 }
