@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 (safety)
+- `docs/how-it-works.html`: a visual walkthrough of every guard, with the real verdicts and messages, measured on 2 Oct 2026, and `docs/how-it-works.pdf`, a copy that reads on GitHub.
+- README: the speed figure counts the guards running in parallel, as Claude Code runs them: about 0.15 seconds a shell command, not 0.3.
+
 ## 0.1.3 (safety)
 - The example settings allow no upload hosts. They used to allow `api.github.com`, `registry.npmjs.org` and `pypi.org`, and an agent can post any file to a public gist through the first of those. Add hosts deliberately.
 - README: the known limits now name the publishing tools these guards don't judge (`git push`, `npm publish`, `twine upload`, and `gh` posting in attended sessions).
