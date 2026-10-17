@@ -1662,5 +1662,903 @@
   },
   "expect": "allow",
   "why": "only Bash payloads are judged"
+ },
+ {
+  "name": "override soft rm then protected delete in a subshell",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='old build output' rm -rf /srv/x; (rm -rf ~/Documents)"
+   }
+  },
+  "expect": "block",
+  "why": "an override covers only the soft reason; a hard floor later in the line, even inside ( ), is still refused"
+ },
+ {
+  "name": "override soft rm then protected delete in a substitution",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='old build output' rm -rf /srv/x; echo $(rm -rf ~/Documents)"
+   }
+  },
+  "expect": "block",
+  "why": "the scan goes on past a soft reason into $(...)"
+ },
+ {
+  "name": "override soft rm then protected delete via bash -c",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='old build output' rm -rf /srv/x && bash -c 'rm -rf ~/.ssh'"
+   }
+  },
+  "expect": "block",
+  "why": "the scan goes on past a soft reason into a nested shell"
+ },
+ {
+  "name": "override soft rm then protected delete via indirection",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "CLAUDE_GUARD_OVERRIDE='old build output' rm -rf /srv/x; X=rm; $X -rf ~/Documents"
+   }
+  },
+  "expect": "block",
+  "why": "the scan goes on past a soft reason into variable indirection"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-/tmp}/x",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-/tmp}/build.X\""
+   }
+  },
+  "expect": "allow",
+  "why": "with TMPDIR set the default is never used, so this is $TMPDIR/build.X"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-/tmp}/glob",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-/tmp}\"/verif.*"
+   }
+  },
+  "expect": "allow",
+  "why": "a glob under ${TMPDIR:-/tmp} stays inside the temp root"
+ },
+ {
+  "name": "rm -f ${TMPDIR-/tmp}/x",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -f ${TMPDIR-/tmp}/x"
+   }
+  },
+  "expect": "allow",
+  "why": "the ${VAR-default} spelling is read the same way"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-/tmp} itself",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-/tmp}\""
+   }
+  },
+  "expect": "block",
+  "why": "the temp root itself is not a file inside it"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-$HOME}/Documents",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-${HOME}}/Documents\""
+   }
+  },
+  "expect": "block",
+  "why": "a default that holds a variable is never read"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-/tmp}/../../home/Documents",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-/tmp}/../../home/Documents\""
+   }
+  },
+  "expect": "block",
+  "why": ".. after the alias climbs out to a protected path"
+ },
+ {
+  "name": "rm -rf ${TMPDIR:-/tmp}/$(echo ../..)",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR:-/tmp}/$(echo ../..)\""
+   }
+  },
+  "expect": "block",
+  "why": "a substitution after the alias is spelled out and judged"
+ },
+ {
+  "name": "TMPDIR reassigned then ${TMPDIR:-/tmp}",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "TMPDIR=$HOME; rm -rf \"${TMPDIR:-/tmp}/Documents\""
+   }
+  },
+  "expect": "block",
+  "why": "a command that assigns TMPDIR keeps it unresolvable"
+ },
+ {
+  "name": "rm -rf two ${TMPDIR%/}/x dirs",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR%/}/a.X\" \"${TMPDIR%/}/b.Y\""
+   }
+  },
+  "expect": "allow",
+  "why": "${TMPDIR%/} only drops a trailing slash, so before / it is $TMPDIR"
+ },
+ {
+  "name": "rm -f ${TMPDIR%%/}/x",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -f \"${TMPDIR%%/}\"/x"
+   }
+  },
+  "expect": "allow",
+  "why": "%%/ is read like %/"
+ },
+ {
+  "name": "rm -rf ${TMPDIR%/} itself",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR%/}\""
+   }
+  },
+  "expect": "block",
+  "why": "the temp root itself"
+ },
+ {
+  "name": "rm -rf ${TMPDIR%/}name sibling",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR%/}name\""
+   }
+  },
+  "expect": "block",
+  "why": "with no / after it, ${TMPDIR%/}name is a sibling of the temp root",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "rm -rf ${TMPDIR%/T/}/x",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"${TMPDIR%/T/}/x\""
+   }
+  },
+  "expect": "block",
+  "why": "any other pattern operator stays unresolvable"
+ },
+ {
+  "name": "one name, two literal scratch dirs",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a.X; rm -rf \"$T\"; T=$CWD/b.Y; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "a name assigned twice is judged with each literal value; both are inside the project"
+ },
+ {
+  "name": "one name, two values, braced",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD//a.X; rm -rf \"${T}\"; T=$CWD//b.X; rm -rf \"${T}\""
+   }
+  },
+  "expect": "allow",
+  "why": "the same with ${T}"
+ },
+ {
+  "name": "one name, second value protected",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; rm -rf \"$T\"; T=$HOME/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "every value is judged; one of them is a protected path"
+ },
+ {
+  "name": "one name, earlier value protected",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$HOME/Documents; T=$CWD/a; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a later value does not hide an earlier one"
+ },
+ {
+  "name": "one name, values on && and || branches",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "[ -n \"$X\" ] && S=$HOME/Documents || S=$CWD/x; rm -rf \"$S\""
+   }
+  },
+  "expect": "block",
+  "why": "either branch can run, so both values are judged"
+ },
+ {
+  "name": "one name, one non-literal value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; rm -rf \"$T\"; T=$(echo /); rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a non-literal value leaves the name unresolvable"
+ },
+ {
+  "name": "one name, cd then relative climb",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; T=$CWD/b; cd \"$T\" && rm -rf ../../home/Documents"
+   }
+  },
+  "expect": "block",
+  "why": "cd into a multi-valued name leaves the working directory unknown"
+ },
+ {
+  "name": "delete before any assignment",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf \"$T\"; T=$CWD/a; T=$CWD/b"
+   }
+  },
+  "expect": "block",
+  "why": "the values count only after an assignment precedes the reference"
+ },
+ {
+  "name": "rebind by +=",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; T+=/../../home/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "T+= changes the value, so T is no longer resolved to its first literal"
+ },
+ {
+  "name": "rebind by for",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; for T in $HOME/Documents; do :; done; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a for loop rebinds its variable"
+ },
+ {
+  "name": "rebind by read",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; read T < /dev/null; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "read rebinds its variable"
+ },
+ {
+  "name": "rebind inside then",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; if true; then T=$HOME/Documents; fi; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "an assignment after then is a rebinding"
+ },
+ {
+  "name": "rebind by eval",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; eval 'T=$HOME/Documents'; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "eval can rebind any name"
+ },
+ {
+  "name": "rebind by declare -n",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; declare -n T=HOME; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "declare -n makes T a reference to another variable"
+ },
+ {
+  "name": "rebind by printf -v",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; printf -v T %s $HOME/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "printf -v assigns its variable"
+ },
+ {
+  "name": "mktemp var rebound by for",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); for D in $HOME/Documents; do :; done; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "a rebound name is not resolved to its mktemp path"
+ },
+ {
+  "name": "mktemp var rebound by read",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); read D; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "read rebinds a mktemp variable"
+ },
+ {
+  "name": "mktemp var rebound by +=",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); D+=/../../..$HOME/Documents; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "+= rebinds a mktemp variable"
+ },
+ {
+  "name": "mktemp var rebound by eval",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); eval \"D=$HOME/Documents\"; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "eval rebinds a mktemp variable"
+ },
+ {
+  "name": "mktemp var rebound by printf -v",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); printf -v D %s $HOME/Documents; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "printf -v rebinds a mktemp variable"
+ },
+ {
+  "name": "mktemp var rebound by ${D:=}",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=$(mktemp -d); : ${D:=x}; rm -rf \"$D\""
+   }
+  },
+  "expect": "block",
+  "why": "${D:=...} can assign the name"
+ },
+ {
+  "name": "sourced file is not followed",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "S=$CWD; . /dev/null; rm -rf \"$S/x\""
+   }
+  },
+  "expect": "allow",
+  "why": "a sourced file is not read, as before"
+ },
+ {
+  "name": "local then mktemp in a function",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "f() { local QD; QD=$(mktemp -d); rm -rf \"$QD\"; }; f"
+   }
+  },
+  "expect": "allow",
+  "why": "a bare local declaration is not a rebinding"
+ },
+ {
+  "name": "another loop variable is fine",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; for f in x y; do echo $f; done; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "only the loop's own name is rebound"
+ },
+ {
+  "name": "export keeps the value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$CWD/a; export T; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "export without a value does not rebind"
+ },
+ {
+  "name": "T=${TMPDIR:-/tmp}/name then rm -r",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"${TMPDIR:-/tmp}/sess.4aEcqQ\"; ls \"$T\" && rm -r \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "an assignment led by TMPDIR is expanded from the hook's TMPDIR",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=\"$TMPDIR\"name with a trailing-slash TMPDIR",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"chart.3dUxRS; rm -rf \"$T\"; T=\"$TMPDIR\"fc.tEcVve; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "TMPDIR ends in / (as on macOS), so \"$TMPDIR\"name is inside it",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "D=${TMPDIR%/}/name",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "D=\"${TMPDIR%/}/bills.VL4e9W\"; rm -rf \"$D\""
+   }
+  },
+  "expect": "allow",
+  "why": "%/ before / is the same directory",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=$TMPDIR/name unquoted",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$TMPDIR/x.Ab12Cd; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "a plain $TMPDIR/ value resolves like rm -rf \"$TMPDIR/x\""
+ },
+ {
+  "name": "export T=${TMPDIR-/tmp}/name",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "export T=\"${TMPDIR-/tmp}/y.Ab12Cd\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "export with a TMPDIR-led value",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "a name built from a TMPDIR-led name",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"/real; S=\"$T/x\"; rm -rf \"$S\""
+   }
+  },
+  "expect": "allow",
+  "why": "a value built from an expanded name resolves too"
+ },
+ {
+  "name": "T=\"$TMPDIR\"../.. value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"../../x; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": ".. in the value leaves it unresolvable",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=\"$TMPDIR/a/../..\" value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR/a/../../../home/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": ".. in the value leaves it unresolvable"
+ },
+ {
+  "name": "T=$TMPDIRchart is another variable",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$TMPDIRchart.X; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "$TMPDIRchart is a different variable",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=\"${TMPDIR%/}\"name sibling",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"${TMPDIR%/}\"name.X; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "...Tname.X is a sibling of the temp root",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=\"$TMPDIR\"name, no trailing slash",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"chart.X; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "with no trailing slash on TMPDIR, \"$TMPDIR\"name is a sibling of it"
+ },
+ {
+  "name": "T=\"$TMPDIR\" root",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "the temp root itself",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=\"$TMPDIR\"/ root",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"/; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "the temp root itself",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=${TMPDIR:-$HOME}/x value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"${TMPDIR:-${HOME}}/x\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a non-literal default",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=$TMPDIR/$(whoami) value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR/$(whoami)\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a substitution in the value",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=$TMPDIR/x* glob value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR/x\"*; rm -rf $T"
+   }
+  },
+  "expect": "block",
+  "why": "a glob in the value",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "TMPDIR reassigned then T=$TMPDIR/..",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "TMPDIR=$HOME; T=\"$TMPDIR/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a command that assigns TMPDIR keeps it unresolvable",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=${TMPDIR:+...} value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"${TMPDIR:+$HOME/Documents}\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "only :- - %/ %%/ are read",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=${TMPDIR#...} value",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"${TMPDIR#/var}/x\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "any other operator stays unresolvable",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T=$TMPDIR with an escape",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=\"$TMPDIR\"\\/x; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "an escape in the value",
+  "env": {
+   "TMPDIR": "/nonexistent-cases/T/"
+  }
+ },
+ {
+  "name": "T from $(ls ...) stays unresolvable",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(ls -d ${TMPDIR:-/tmp}/bills.* | head -1); [ -n \"$T\" ] && rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a value known only at run time"
+ },
+ {
+  "name": "TMPDIR real path spelled out",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "rm -rf /private$HOME/../tmp/real"
+   }
+  },
+  "expect": "allow",
+  "why": "TMPDIR's real path (/var/... is /private/var/... on macOS) is the same root"
+ },
+ {
+  "name": "T=$(cd $(mktemp -d) && pwd -P) cleanup",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(cd \"$(mktemp -d \"${TMPDIR:-/tmp}/vfy.XXXXXX\")\" && pwd -P); trap 'rm -rf \"$T\"' EXIT"
+   }
+  },
+  "expect": "allow",
+  "why": "the fresh mktemp dir by its real path"
+ },
+ {
+  "name": "T=$(cd $(mktemp -d) && pwd) then rm",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(cd \"$(mktemp -d)\" && pwd); rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "the same with plain pwd"
+ },
+ {
+  "name": "mktemp then declare \"T=...\"",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare \"T=$HOME/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a quoted rebinding replaces the mktemp value"
+ },
+ {
+  "name": "mktemp then export \"T=...\"",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); export \"T=$HOME/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a quoted rebinding replaces the mktemp value"
+ },
+ {
+  "name": "mktemp then local \"T=...\"",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); local \"T=$HOME/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a quoted rebinding replaces the mktemp value"
+ },
+ {
+  "name": "mktemp then declare 'T=...'",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare 'T=$HOME/Documents'; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "single quotes too"
+ },
+ {
+  "name": "mktemp then declare \"T\"=...",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare \"T\"=$HOME/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a quote inside the name"
+ },
+ {
+  "name": "mktemp then declare T\"\"=...",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare T\"\"=$HOME/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "an empty quote inside the name"
+ },
+ {
+  "name": "mktemp then declare \\T=...",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare \\T=$HOME/Documents; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "an escaped name"
+ },
+ {
+  "name": "mktemp then declare A=1 \"T=...\"",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); declare A=1 \"T=$HOME/Documents\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a quoted rebinding after another assignment"
+ },
+ {
+  "name": "mktemp, quotes elsewhere",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d); echo \"made it\"; rm -rf \"$T\""
+   }
+  },
+  "expect": "allow",
+  "why": "quotes that rebind nothing change nothing"
+ },
+ {
+  "name": "mktemp subdir cleanup",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "M=$(mktemp -d); mkdir \"$M/base\"; rm -rf \"$M/base\""
+   }
+  },
+  "expect": "allow",
+  "why": "a path under a fresh mktemp dir"
+ },
+ {
+  "name": "mktemp name also printed as NAME=",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "T=$(mktemp -d \"${TMPDIR:-/tmp}/n.XXXXXX\"); rm -rf \"$T\"; echo \"rc=$? T=$T\""
+   }
+  },
+  "expect": "block",
+  "why": "a NAME= in printed text is counted as a second assignment; delete by the literal path instead"
  }
 ]

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 (safety)
+- Guards brought up to date with fixes made in a production deployment since 30 Sep 2026: 161 new test cases (625 in all, up from 464). Each fix that closes a hole has a case that fails on 0.1.4.
+- `command-guard`: a variable rebound in a way the guard did not track (`T+=`, `for T in`, `read T`, `printf -v T`, `declare -n`, `eval`, `${T:=}`, quoted spellings such as `declare "T=..."`) no longer lets `rm -rf "$T"` reach a protected folder. Deleting your own temp files works with `${TMPDIR:-/tmp}`, `${TMPDIR%/}`, a `cd "$(mktemp -d)" && pwd` folder, a temp path built in an earlier assignment, and the `/private` spelling macOS gives temp folders.
+- `egress-guard`: blocks `curl --url-query @file`, `-G -d @file` and `--data-urlencode name@file`; `-G` no longer cancels `-T`/`-F` uploads; a backslash-newline can no longer split `curl` from its arguments; quotes inside `$(...)` no longer hide the rest of a command; `timeout -s KILL 30 curl` and shortened wget options (`--post-fi=`) are recognised.
+- `config-guard`: blocks writes through sed `w`/`W`/`e`, a command word held in a variable, interpreter code piped into a shell, a module written then loaded, and programs `git -c` can name (aliases, pager, editor, sshCommand, credential.helper and similar).
+- `ingress-guard`: a grep pattern or an escaped `\|` that only names `curl` or `gh pr view` is no longer treated as a web read.
+- `tests/run_cases.py` now checks what a PostToolUse guard prints (`out`, `contains`, `lacks`), not only its exit code.
+
+## README
+- README rewritten for newcomers: a five-minute start, a glossary, a map of the repository and the 18+ requirement for a Claude account.
+
 ## 0.1.4 (safety)
 - `docs/how-it-works.html`: a visual walkthrough of every guard, with the real verdicts and messages, measured on 2 Oct 2026, and `docs/how-it-works.pdf`, a copy that reads on GitHub.
 - README: the speed figure counts the guards running in parallel, as Claude Code runs them: about 0.15 seconds a shell command, not 0.3.

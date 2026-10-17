@@ -65,10 +65,19 @@ def main(argv):
                 p = subprocess.run(["bash", WRAPPER, script], input=json.dumps(payload),
                                    capture_output=True, text=True, env=cenv, cwd=cwd, timeout=30)
                 got = {0: "allow", 2: "block"}.get(p.returncode, f"break(rc={p.returncode})")
-                if got != c["expect"]:
+                want = c["expect"]
+                if "out" in c:
+                    # PostToolUse guards: what they print matters, not only the exit code.
+                    o = p.stdout.strip()
+                    kind = "none" if not o else ("rewrite" if "updatedToolOutput" in o else "context")
+                    missing = [x for x in c.get("contains", []) if x not in o]
+                    present = [x for x in c.get("lacks", []) if x in o]
+                    got += f"/{kind}" + "".join(f" missing:{x}" for x in missing) + "".join(f" has:{x}" for x in present)
+                    want += f"/{c['out']}"
+                if got != want:
                     fails += 1
                     gfail += 1
-                    print(f"FAIL {guard} :: {c['name']}: expected {c['expect']}, got {got}")
+                    print(f"FAIL {guard} :: {c['name']}: expected {want}, got {got}")
                     if p.stderr.strip():
                         print("     " + p.stderr.strip().splitlines()[0][:200])
                 elif verbose:

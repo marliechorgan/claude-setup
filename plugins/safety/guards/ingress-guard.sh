@@ -119,12 +119,55 @@ PRE = r"(?:^|[|;&(`\n]|\$\()\s*(?:sudo\s+|nohup\s+|time\s+|env\s+|command\s+|\w+
 FETCH = re.compile(PRE + r"(curl|wget|aria2c|lynx|w3m|elinks|http|https|xh|xhs)(?=\s)")
 GHREAD = re.compile(PRE + r"gh\s+(?:issue|pr|release|gist|repo)\s+view(?=\s|$)|" + PRE + r"gh\s+api(?=\s)")
 
+GREP_HEAD = re.compile(r"\s*(?:(?:sudo|env|command|time|nohup|nice|xargs)\s+|[A-Za-z_]\w*=\S*\s+)*(?:\S*/)?"
+                       r"(?:[efz]?grep|rg|ugrep|git(?:\s+-[Cc]\s+\S+|\s+--?[\w-]+(?:=\S*)?)*\s+grep)(?=\s)")
+
+
+def code_text(cmd):
+    """cmd with text the shell never runs as a command blanked, so a pattern that only QUOTES a
+    fetch is not taken for one: a backslash before | ; or & (an escaped operator is a literal
+    character), and the quoted arguments of grep, rg or git grep (a search pattern). A quoted
+    argument holding $( or a backtick is kept, because the shell runs that. Heredoc bodies are
+    kept: a body can be fed to a shell in too many ways to prove it inert, and scanning output
+    that did not need it only costs a note. Unsure (an unclosed quote): the text is kept whole."""
+    out, segs, i, n, start = list(cmd), [], 0, len(cmd), 0
+    quotes = []
+    while i < n:
+        ch = cmd[i]
+        if ch == "\\":
+            if i + 1 < n and cmd[i + 1] in "|;&":
+                out[i] = out[i + 1] = " "
+            i += 2
+            continue
+        if ch in "'\"":
+            j = i + 1
+            while j < n and cmd[j] != ch:
+                j += 2 if ch == '"' and cmd[j] == "\\" else 1
+            if j >= n:
+                return cmd
+            quotes.append((i, j))
+            i = j + 1
+            continue
+        if ch in ";&|\n()":
+            segs.append((start, i))
+            start = i + 1
+        i += 1
+    segs.append((start, n))
+    for a, b in segs:
+        if not GREP_HEAD.match("".join(out[a:b])):
+            continue
+        for qa, qb in quotes:
+            if a <= qa and qb < b and "$(" not in cmd[qa:qb] and "`" not in cmd[qa:qb]:
+                out[qa + 1:qb] = [" "] * (qb - qa - 1)
+    return "".join(out)
+
+
 src, via, shell = "web", "", False
 if tool == "Bash" or tool.startswith("Bash") or (
         isinstance(resp, dict) and "stdout" in resp and "stderr" in resp):
     ti = data.get("tool_input")
     cmd = (ti.get("command") or "") if isinstance(ti, dict) else ""
-    cmd = cmd if isinstance(cmd, str) else ""
+    cmd = code_text(cmd) if isinstance(cmd, str) else ""
     hits = [("web", "curl/wget")] if FETCH.search(cmd) else []
     if GHREAD.search(cmd):
         hits.append(("github", "gh read"))

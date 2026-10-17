@@ -10,7 +10,8 @@
 #   REQUEST_BODY   curl/wget/httpie carrying a body or upload (-d, --data*, --json, -F, -T,
 #                  -X POST|PUT|PATCH, wget --post-*, httpie data items or piped stdin)
 #   FILE_IN_ARGS   a command substitution that reads a file or the environment, spliced
-#                  into a fetch (a header, a URL), which sends the data even on a GET
+#                  into a fetch (a header, a URL), which sends the data even on a GET; and
+#                  curl query data read from a file (-G -d @f, --url-query @f), whatever its length
 #   RAW_SOCKET     nc/ncat/netcat/telnet/openssl s_client fed from a pipe or a file, or
 #                  with an exec flag; socat to a remote TCP/UDP address; writes to /dev/tcp
 #   REMOTE_COPY    scp/rsync with a remote destination; sftp/ftp/lftp that uploads; ssh
@@ -132,11 +133,44 @@ def deobfuscate(s):
     return s
 
 
-def lift_substitutions(s, store):
-    """Replace every $(...) and `...` with a placeholder; keep their text in store."""
-    out, i, n = [], 0, len(s)
+def join_continuations(s):
+    """Remove each backslash-newline outside single quotes, as the shell does before it reads a
+    word. Left in, `cu\\<newline>rl` and `nice \\<newline>curl ...` hid the command word."""
+    out, q, i, n = [], None, 0, len(s)
     while i < n:
-        if s.startswith("$(", i) and not s.startswith("$((", i):
+        c = s[i]
+        if q == "'":
+            if c == "'":
+                q = None
+            out.append(c); i += 1; continue
+        if c == "\\" and i + 1 < n:
+            if s[i + 1] == "\n":
+                i += 2; continue
+            out.append(s[i:i + 2]); i += 2; continue
+        if c == "'" and not q:
+            q = "'"
+        elif c == '"':
+            q = None if q else '"'
+        out.append(c); i += 1
+    return "".join(out)
+
+
+def lift_substitutions(s, store):
+    """Replace every $(...) and `...` with a placeholder; keep their text in store.
+    Single-quoted text is literal to the shell, so a quoted '`' or '$(' is not lifted: lifting
+    it swallowed the rest of the command, and the body flags and host after it went unseen."""
+    out, i, n, dq = [], 0, len(s), False
+    while i < n:
+        if s[i] == "'" and not dq:
+            j = s.find("'", i + 1)
+            j = n if j < 0 else j + 1
+            out.append(s[i:j]); i = j
+        elif s[i] == "\\" and i + 1 < n:
+            out.append(s[i:i + 2]); i += 2
+        elif s[i] == '"':
+            dq = not dq
+            out.append(s[i]); i += 1
+        elif s.startswith("$(", i) and not s.startswith("$((", i):
             depth, j = 1, i + 2
             while j < n and depth:
                 if s.startswith("$(", j):
@@ -239,7 +273,8 @@ def strip_prefix(toks):
         if base == "timeout":
             i += 1
             while i < len(toks) and toks[i].startswith("-"):
-                i += 1
+                # -s/-k and their long forms take a value: `timeout -s KILL 30 curl ...`
+                i += 2 if toks[i] in ("-s", "-k", "--signal", "--kill-after") else 1
             i += 1                                  # the duration
             continue
         if base == "xargs":
@@ -295,9 +330,25 @@ CURL_BODY_LONG = re.compile(r"^--(?:data|data-binary|data-raw|data-urlencode|dat
                             r"form|form-string|upload-file)$")
 
 
+CURL_UPLOADS = {"-F", "-T", "--form", "--form-string", "--upload-file", "-H @file"}
+
+
+def curl_value_reads_file(flag, val):
+    """True when curl reads this data value from a local file: `@f` for the data flags and
+    --json, and `@f` or `name@f` for --data-urlencode and --url-query. --data-raw never does."""
+    if flag in ("--data-urlencode", "--url-query"):
+        return "@" in val.lstrip("+").split("=", 1)[0]
+    return flag != "--data-raw" and val.startswith("@")
+
+
 def read_curl(args):
-    """-> (targets, body_flags, is_get, get_data_len, header_files)"""
-    targets, body, is_get, get_len, i = [], [], False, 0, 0
+    """-> (targets, body_flags, is_get, query)
+    body_flags is what curl sends as a request body. Under -G/--get the data flags move into the
+    query string, but an upload (-T, -F) is still a body: `curl -G -T f URL` is a PUT of f.
+    query = {"len": chars of data -G moves into the query, "file": a -G data value read from a
+    local file, "uq_len"/"uq_file": the same for --url-query, which is in the query always}."""
+    targets, body, is_get, i = [], [], False, 0
+    data = []                                   # (flag, value) of every data flag
     while i < len(args):
         t = args[i]
         if t == "--":
@@ -307,9 +358,11 @@ def read_curl(args):
             takes = not CURL_LONG_NOARG.match(name)
             if not eq and takes and i + 1 < len(args):
                 val = args[i + 1]; i += 1
-            if CURL_BODY_LONG.match(name):
-                if name == "--data-urlencode" or name.startswith("--data"):
-                    get_len += len(val)
+            if name == "--url-query":
+                data.append((name, val))
+            elif CURL_BODY_LONG.match(name):
+                if name.startswith("--data") or name == "--json":
+                    data.append((name, val))
                 body.append(name)
             elif name == "--request" and val.upper() in ("POST", "PUT", "PATCH"):
                 body.append("-X " + val.upper())
@@ -332,7 +385,7 @@ def read_curl(args):
                     if ch in "dFT":
                         body.append("-" + ch)
                         if ch == "d":
-                            get_len += len(val)
+                            data.append(("-d", val))
                     elif ch == "X" and val.upper() in ("POST", "PUT", "PATCH"):
                         body.append("-X " + val.upper())
                     elif ch == "H" and val.startswith("@"):
@@ -340,10 +393,28 @@ def read_curl(args):
                     break
             i += 1; continue
         targets.append(t); i += 1
-    return targets, body, is_get, get_len
+    q = {"len": 0, "file": False, "uq_len": 0, "uq_file": False}
+    for flag, val in data:
+        k = "uq_" if flag == "--url-query" else ""
+        if k or is_get:
+            q[k + "len"] += len(val)
+            q[k + "file"] = q[k + "file"] or curl_value_reads_file(flag, val)
+    if is_get:
+        body = [b for b in body if b in CURL_UPLOADS]
+    return targets, body, is_get, q
 
 
 WGET_ARG_SHORT = set("OoaPUeitTwQlADRIXYB")
+WGET_SEND_LONG = ("--post-data", "--post-file", "--body-data", "--body-file", "--method")
+
+
+def wget_long_name(name):
+    """wget (getopt_long) accepts any unambiguous prefix of a long option: `--post-fi=f` is
+    --post-file. Expand a prefix of a send option to its full name."""
+    if name in WGET_SEND_LONG:
+        return name
+    hits = [o for o in WGET_SEND_LONG if o.startswith(name)] if len(name) > 4 else []
+    return hits[0] if len(hits) == 1 else name
 
 
 def read_wget(args):
@@ -352,6 +423,7 @@ def read_wget(args):
         t = args[i]
         if t.startswith("--"):
             name, eq, val = t.partition("=")
+            name = wget_long_name(name)
             if name in ("--post-data", "--post-file", "--body-data", "--body-file"):
                 body.append(name)
                 if not eq:
@@ -541,15 +613,19 @@ def judge_stage(stage, piped, store, depth):
         return out
 
     if word == "curl":
-        targets, body, is_get, get_len = read_curl(rest)
+        targets, body, is_get, q = read_curl(rest)
         bad = targets_bad(targets)
-        if body and not is_get and bad:
+        if body and bad:
             out.append(("REQUEST_BODY", "%s -> %s" % ("/".join(sorted(set(body))), ", ".join(bad))))
         if bad and any(subst_reads_data(a, store) for a in rest):
             out.append(("FILE_IN_ARGS", "file or environment contents spliced into the request -> " + ", ".join(bad)))
+        if bad and (q["file"] or q["uq_file"]):
+            # a file sent in the query string is still the file, whatever its length
+            out.append(("FILE_IN_ARGS", "query data read from a local file (%s) -> %s"
+                        % ("--url-query" if q["uq_file"] else "-G data", ", ".join(bad))))
         if UNATTENDED:
-            if is_get and get_len > QF_MAX and bad:
-                out.append(("BULK_QUERY", "%d chars of -G data -> %s" % (get_len, ", ".join(bad))))
+            if q["len"] + q["uq_len"] > QF_MAX and bad:
+                out.append(("BULK_QUERY", "%d chars of -G/--url-query data -> %s" % (q["len"] + q["uq_len"], ", ".join(bad))))
             for t in targets:
                 h, n = url_parts(t)
                 if n > QF_MAX and h and not host_ok(h):
@@ -681,7 +757,7 @@ def judge(cmd, depth=0):
             out += code_findings(body)
         elif re.match(r"^(?:ba|z|k|da)?sh$", w) and depth < 4:
             out += judge(body, depth + 1)
-    cmd = deobfuscate(cmd)
+    cmd = deobfuscate(join_continuations(cmd))
     # Resolve simple NAME=value assignments so a URL parked in a variable is still seen.
     assigns = {}
     for m in re.finditer(r"(?:^|[\s;&|(])(?:export\s+)?([A-Za-z_]\w*)=('([^']*)'|\"([^\"]*)\"|([^\s;&|)]*))", cmd):
