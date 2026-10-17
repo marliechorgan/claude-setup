@@ -40,7 +40,10 @@ def main(argv):
     if not files:
         print("no case files found", file=sys.stderr)
         return 2
-    base = tempfile.mkdtemp(prefix="safety-tests-")
+    # Not under /tmp: that is a default delete root, so on Linux (where mkdtemp uses /tmp) every
+    # path beside the fake TMPDIR would be allowed and cases about leaving TMPDIR would pass vacuously.
+    parent = "/var/tmp" if os.access("/var/tmp", os.W_OK) else None
+    base = tempfile.mkdtemp(prefix="safety-tests-", dir=parent)
     home, cwd, logs = (os.path.join(base, d) for d in ("home", "work", "logs"))
     for d in (home, cwd, logs):
         os.makedirs(d)
