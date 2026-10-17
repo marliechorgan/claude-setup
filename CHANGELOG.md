@@ -6,7 +6,7 @@
 - `egress-guard`: blocks `curl --url-query @file`, `-G -d @file` and `--data-urlencode name@file`; `-G` no longer cancels `-T`/`-F` uploads; a backslash-newline can no longer split `curl` from its arguments; quotes inside `$(...)` no longer hide the rest of a command; `timeout -s KILL 30 curl` and shortened wget options (`--post-fi=`) are recognised.
 - `config-guard`: blocks writes through sed `w`/`W`/`e`, a command word held in a variable, interpreter code piped into a shell, a module written then loaded, and programs `git -c` can name (aliases, pager, editor, sshCommand, credential.helper and similar).
 - `ingress-guard`: a grep pattern or an escaped `\|` that only names `curl` or `gh pr view` is no longer treated as a web read.
-- `tests/run_cases.py` now checks what a PostToolUse guard prints (`out`, `contains`, `lacks`), not only its exit code.
+- `tests/run_cases.py` now checks what a PostToolUse guard prints (`out`, `contains`, `lacks`), not only its exit code; keeps its fixture out of `/tmp`, so cases about leaving TMPDIR mean the same on Linux; and supports `platforms` for a case about one OS's paths.
 
 ## README
 - README rewritten for newcomers: a five-minute start, a glossary, a map of the repository and the 18+ requirement for a Claude account.

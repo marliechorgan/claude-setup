@@ -3,7 +3,10 @@
 
   python3 tests/run_cases.py [guard-name ...] [-v]
 
-Each tests/<guard>.cases.json holds [{"name", "payload", "expect": "allow"|"block", "why"}].
+Each tests/<guard>.cases.json holds [{"name", "payload", "expect": "allow"|"block", "why"}], with
+optional "env", "platforms" (the sys.platform values a case applies to) and, for PostToolUse
+guards, "out" ("none"|"context"|"rewrite"), "contains" and "lacks" (text the output must or must
+not hold).
 $HOME and $CWD inside a payload are replaced by a throwaway home and working directory, and
 the guards run with HOME pointed there too, so no real file is ever read or touched. Guards
 judge commands; nothing in a payload is executed. Exit 0 when every case matches.
@@ -59,9 +62,12 @@ def main(argv):
             if not os.path.exists(script):
                 script = os.path.join(ROOT, "guards", guard + ".py")
             cases = json.load(open(f, encoding="utf-8"))
-            gfail = 0
+            gfail = grun = 0
             for c in cases:
+                if "platforms" in c and sys.platform not in c["platforms"]:
+                    continue  # a case about one OS's paths, such as macOS's /private spelling
                 total += 1
+                grun += 1
                 payload = expand(c["payload"], home, cwd)
                 payload.setdefault("cwd", cwd)
                 cenv = dict(env, **c.get("env", {}))
@@ -85,7 +91,7 @@ def main(argv):
                         print("     " + p.stderr.strip().splitlines()[0][:200])
                 elif verbose:
                     print(f"ok   {guard} :: {c['name']}")
-            print(f"{guard}: {len(cases) - gfail}/{len(cases)} passed")
+            print(f"{guard}: {grun - gfail}/{grun} passed")
     finally:
         shutil.rmtree(base, ignore_errors=True)
     print(f"TOTAL {total - fails}/{total} passed")

@@ -2416,7 +2416,8 @@
    }
   },
   "expect": "allow",
-  "why": "TMPDIR's real path (/var/... is /private/var/... on macOS) is the same root"
+  "why": "TMPDIR's real path (/var/... is /private/var/... on macOS) is the same root",
+  "platforms": ["darwin"]
  },
  {
   "name": "T=$(cd $(mktemp -d) && pwd -P) cleanup",
