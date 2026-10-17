@@ -3,7 +3,10 @@
 
   python3 tests/run_cases.py [guard-name ...] [-v]
 
-Each tests/<guard>.cases.json holds [{"name", "payload", "expect": "allow"|"block", "why"}].
+Each tests/<guard>.cases.json holds [{"name", "payload", "expect": "allow"|"block", "why"}], with
+optional "env", "platforms" (the sys.platform values a case applies to) and, for PostToolUse
+guards, "out" ("none"|"context"|"rewrite"), "contains" and "lacks" (text the output must or must
+not hold).
 $HOME and $CWD inside a payload are replaced by a throwaway home and working directory, and
 the guards run with HOME pointed there too, so no real file is ever read or touched. Guards
 judge commands; nothing in a payload is executed. Exit 0 when every case matches.
@@ -40,7 +43,10 @@ def main(argv):
     if not files:
         print("no case files found", file=sys.stderr)
         return 2
-    base = tempfile.mkdtemp(prefix="safety-tests-")
+    # Not under /tmp: that is a default delete root, so on Linux (where mkdtemp uses /tmp) every
+    # path beside the fake TMPDIR would be allowed and cases about leaving TMPDIR would pass vacuously.
+    parent = "/var/tmp" if os.access("/var/tmp", os.W_OK) else None
+    base = tempfile.mkdtemp(prefix="safety-tests-", dir=parent)
     home, cwd, logs = (os.path.join(base, d) for d in ("home", "work", "logs"))
     for d in (home, cwd, logs):
         os.makedirs(d)
@@ -56,24 +62,36 @@ def main(argv):
             if not os.path.exists(script):
                 script = os.path.join(ROOT, "guards", guard + ".py")
             cases = json.load(open(f, encoding="utf-8"))
-            gfail = 0
+            gfail = grun = 0
             for c in cases:
+                if "platforms" in c and sys.platform not in c["platforms"]:
+                    continue  # a case about one OS's paths, such as macOS's /private spelling
                 total += 1
+                grun += 1
                 payload = expand(c["payload"], home, cwd)
                 payload.setdefault("cwd", cwd)
                 cenv = dict(env, **c.get("env", {}))
                 p = subprocess.run(["bash", WRAPPER, script], input=json.dumps(payload),
                                    capture_output=True, text=True, env=cenv, cwd=cwd, timeout=30)
                 got = {0: "allow", 2: "block"}.get(p.returncode, f"break(rc={p.returncode})")
-                if got != c["expect"]:
+                want = c["expect"]
+                if "out" in c:
+                    # PostToolUse guards: what they print matters, not only the exit code.
+                    o = p.stdout.strip()
+                    kind = "none" if not o else ("rewrite" if "updatedToolOutput" in o else "context")
+                    missing = [x for x in c.get("contains", []) if x not in o]
+                    present = [x for x in c.get("lacks", []) if x in o]
+                    got += f"/{kind}" + "".join(f" missing:{x}" for x in missing) + "".join(f" has:{x}" for x in present)
+                    want += f"/{c['out']}"
+                if got != want:
                     fails += 1
                     gfail += 1
-                    print(f"FAIL {guard} :: {c['name']}: expected {c['expect']}, got {got}")
+                    print(f"FAIL {guard} :: {c['name']}: expected {want}, got {got}")
                     if p.stderr.strip():
                         print("     " + p.stderr.strip().splitlines()[0][:200])
                 elif verbose:
                     print(f"ok   {guard} :: {c['name']}")
-            print(f"{guard}: {len(cases) - gfail}/{len(cases)} passed")
+            print(f"{guard}: {grun - gfail}/{grun} passed")
     finally:
         shutil.rmtree(base, ignore_errors=True)
     print(f"TOTAL {total - fails}/{total} passed")

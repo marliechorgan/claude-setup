@@ -1,0 +1,3 @@
+# Fake JWT ({"alg":"HS256"}, sub 1234567890) used to test that secrets are redacted from the guard log.
+53e6ba1374efc474f50d466b369bb3940359fe3f:plugins/safety/tests/test_guard_run.py:jwt:148
+plugins/safety/tests/test_guard_run.py:jwt:148

@@ -242,6 +242,15 @@ def compute(data):
         a = absolute(r, session_cwd)
         if a and a not in NEVER_ROOTS and len(a) > 1:
             allowed.append(a)
+            # The same directory as pwd -P and realpath print it on macOS (/var/folders/... is
+            # /private/var/folders/...). Only that exact spelling: a root that is a symlink to
+            # somewhere else does not make the somewhere else an allowed root.
+            try:
+                rp = normalize(os.path.realpath(a))
+                if rp == "/private" + a and rp not in NEVER_ROOTS and rp not in allowed:
+                    allowed.append(rp)
+            except Exception:
+                pass
     # A path mktemp created inside this command is disposable wherever its template put it.
     MKTEMP_ROOT = "/.command-guard-mktemp"
     allowed.append(MKTEMP_ROOT)
@@ -506,7 +515,15 @@ def compute(data):
     if tmp_env in NEVER_ROOTS or len(tmp_env) <= 1:
         tmp_env = ""
 
+    # ${TMPDIR:-/tmp} and ${TMPDIR-/tmp} are $TMPDIR whenever the hook has one the command does
+    # not assign: the default is never used. Only a literal default is read, so ${TMPDIR:-$HOME}
+    # stays unresolvable. ${TMPDIR%/} and ${TMPDIR%%/} drop one trailing slash, so before a /
+    # they name the same directory; ${TMPDIR%/}name is a sibling of it and stays unresolvable.
+    TMPDIR_ALIAS = re.compile(r'\$\{TMPDIR(?::?-[^}$`"\'\\]*\}|%%?/\}(?="?/))')
+
     def expand_known(t):
+        if tmp_env and t.startswith("${TMPDIR"):
+            t = TMPDIR_ALIAS.sub("${TMPDIR}", t, count=1)
         if not HOME_ASSIGNED:
             m = re.match(r'\$(?:HOME|\{HOME\})"?(?=/|$)', t)
             if m:
@@ -1322,6 +1339,39 @@ def compute(data):
                     out[name] = value.strip()
         return out
 
+    # T="${TMPDIR:-/tmp}/name.X", T="$TMPDIR"name.X, T=${TMPDIR%/}/x: a scratch path re-spelled
+    # through TMPDIR. Read from the RAW segment, because tokenize() drops the quotes that tell
+    # "$TMPDIR"x from $TMPDIRx (another variable), and expanded as the shell would from the
+    # hook's own TMPDIR: plain, braced, a literal :-/- default, or %/ and %%/ (one trailing slash
+    # off). The rest must be plain path text with no .. component; anything else stays
+    # unresolvable. Nothing is expanded when the command assigns TMPDIR.
+    TMPDIR_VALUE = re.compile(r'(")?\$(?:TMPDIR(?!\w)|\{TMPDIR(:?-[^}$`"\'\\]*|%%?/)?\})(")?([\w.,+@%=/-]*)(")?')
+
+    def tmpdir_assignment_value(raw):
+        m = TMPDIR_VALUE.fullmatch(raw) if tmp_env else None
+        if not m:
+            return None
+        q1, op, q2, rest, q3 = m.groups()
+        if (q1, q2, q3) not in ((None, None, None), ('"', '"', None), ('"', None, '"')):
+            return None
+        if not rest or ".." in rest.split("/"):
+            return None
+        env = os.environ.get("TMPDIR") or ""
+        if op and op.startswith("%") and env.endswith("/"):
+            env = env[:-1]
+        return normalize(env + rest) + ("/" if rest.endswith("/") else "")
+
+    def assignment_values(segment):
+        # collect_assignments for one segment, with a TMPDIR-led value expanded.
+        values = collect_assignments([segment])
+        m = re.fullmatch(r'(?:(?:export|local|readonly|typeset|declare)\s+)?([A-Za-z_]\w*)=(\S+)',
+                         segment.strip())
+        if m and m.group(1) in values:
+            expanded = tmpdir_assignment_value(m.group(2))
+            if expanded is not None:
+                values[m.group(1)] = expanded
+        return values
+
     def var_ref(token):
         if not token.startswith("$"):
             return None
@@ -1604,29 +1654,86 @@ def compute(data):
             return r
         segments = split_segments(text)
         variables = collect_assignments(segments)
-        assign_count = {}
+        assign_count, multi_values = {}, {}
         for seg in segments:
-            for name in collect_assignments([seg.strip()]):
+            for name, value in assignment_values(seg.strip()).items():
                 assign_count[name] = assign_count.get(name, 0) + 1
-        # T=$(mktemp) and D="$(mktemp -d)"/sub name a fresh path: resolve it under a synthetic
-        # allowed root. Single-assigned names only, never with .. after the reference.
+                multi_values.setdefault(name, []).append(value)
+        # A name the command can rebind other than by a plain NAME=value segment is never
+        # resolved: T+=/../.., for T in ..., read T, printf -v T, declare -n T, ${T:=...}, an
+        # assignment after then/do/{ that the count above does not see, and any eval (which can
+        # rebind every name). Not followed: a sourced file, a bare `local T`, (( T = ... )).
+        rebound, rebind_all, counted = set(), False, {}
+        for seg in segments:
+            toks = tokenize(seg.strip()) or []
+            while toks and (toks[0] in ("if", "then", "else", "elif", "do", "while", "until", "!",
+                                        "{", "time", "function") or toks[0].endswith("()")):
+                toks = toks[2:] if toks[0] == "function" else toks[1:]
+            head = base_name(toks[0].lstrip("(")) if toks else ""
+            decl = head in ("export", "readonly", "typeset", "local", "declare")
+            atoks = toks[1:] if decl else toks
+            rebound.update(t.split("+=", 1)[0] for t in atoks if re.match(r"[A-Za-z_]\w*\+=", t))
+            # The count above, made again with the grammar words gone: an assignment it did
+            # not see (then T=...) shows up as a difference.
+            for n in collect_assignments([" ".join(shlex.quote(t) for t in toks)]):
+                counted[n] = counted.get(n, 0) + 1
+            if head == "eval":
+                rebind_all = True
+            elif head in ("for", "select") and len(toks) > 1:
+                rebound.add(toks[1])
+            elif head in ("read", "mapfile", "readarray", "getopts", "printf", "unset", "let") or (
+                    decl and any(t.startswith(("-", "+")) for t in toks[1:])):
+                rebound.update(t.split("=", 1)[0] for t in toks[1:])
+        for name in assign_count:
+            if counted.get(name, 0) != assign_count[name] or re.search(r"\$\{%s:?=" % name, text):
+                rebound.add(name)
+
+        def resolvable(name):
+            return not rebind_all and name not in rebound
+
+        # A name assigned more than once (one scratch name reused for two dirs) is judged with
+        # EVERY literal value it is given: the command passes only if it passes with each one.
+        multi_values = {k: list(dict.fromkeys(v)) for k, v in multi_values.items()
+                        if assign_count[k] > 1 and resolvable(k) and not any(
+                            "$" in x or "`" in x or '"' in x or "'" in x for x in v)}
+
+        def token_assignments(name):
+            # NAME= after quote removal, in every segment: declare "T=...", T""=..., \T=... all
+            # rebind T. A segment that does not tokenize and names NAME counts as a rebinding.
+            n = 0
+            for seg in segments:
+                toks = tokenize(seg.strip())
+                if toks is None:
+                    n += 2 if name in seg else 0
+                    continue
+                n += sum(1 for t in toks if t.startswith(name + "="))
+            return n
+
+        # T=$(mktemp), D="$(mktemp -d)"/sub and T=$(cd "$(mktemp -d)" && pwd -P) name a fresh
+        # path: resolve it under a synthetic allowed root. Single-assigned names only, never
+        # with .. after the reference.
         mktemp_vars = {}
-        for m in re.finditer(r'(?:^|[\s;&|(])([A-Za-z_]\w*)="?\$\(\s*mktemp\b[^)]*\)"?((?:/[\w.\-]+)*)', text):
+        for m in re.finditer(r'(?:^|[\s;&|(])([A-Za-z_]\w*)=(?:"?\$\(\s*mktemp\b[^)]*\)"?'
+                             r'|"?\$\(\s*cd\s+"?\$\(\s*mktemp\b[^)]*\)"?\s*&&\s*pwd(?:\s+-[PL])?\s*\)"?)'
+                             r'((?:/[\w.\-]+)*)', text):
             name, suffix = m.group(1), m.group(2)
-            if ".." not in suffix and len(re.findall(r'(?:^|[\s;&|(])%s=' % name, text)) == 1:
+            if ".." not in suffix and len(re.findall(r'(?:^|[\s;&|("\'])%s=' % name, text)) == 1 \
+                    and token_assignments(name) <= 1 and resolvable(name):
                 mktemp_vars[name] = MKTEMP_ROOT + "/" + name.lower() + suffix
         seen = {}
+        assigned_before = set()
         positional = []
         for segment in segments:
             segment = segment.strip()
             if not segment:
                 continue
-            seg_vars = collect_assignments([segment])
+            seg_vars = assignment_values(segment)
             if seg_vars:
+                assigned_before.update(seg_vars)
                 # Values built from earlier single-assigned literals resolve too; anything that
                 # still holds a $, a backtick or a quote stays unresolvable.
                 for k, v in seg_vars.items():
-                    if assign_count.get(k) != 1:
+                    if assign_count.get(k) != 1 or not resolvable(k):
                         continue
                     for name, value in mktemp_vars.items():
                         v = re.sub(r"\$(?:\{%s\}|%s(?!\w))(?![^\s\"']*\.\.)" % (name, name),
@@ -1644,9 +1751,20 @@ def compute(data):
                 if value.startswith(("$", "`")) or "$(" in value or '"' in value or "'" in value:
                     continue
                 segment = re.sub(r"\$(?:\{%s\}|%s(?!\w))" % (name, name), lambda _m, v=value: v, segment)
-            r = note(check_indirection(segment, variables, depth))
-            if r:
-                return r
+            # A multi-valued name (see multi_values) is judged with each of its values; the
+            # segment passes only if every variant does.
+            variants = [segment]
+            for name, values in multi_values.items():
+                ref = r"\$(?:\{%s\}|%s(?!\w))" % (name, name)
+                # Like a single name, only once an assignment precedes the reference.
+                if name in assigned_before and re.search(ref, segment) \
+                        and len(variants) * len(values) <= 16:
+                    variants = [re.sub(ref, lambda _m, v=value: v, x)
+                                for x in variants for value in values]
+            for variant in variants:
+                r = note(check_indirection(variant, variables, depth))
+                if r:
+                    return r
             raw_toks = tokenize(segment) or []
             if raw_toks[:1] == ["set"] and len(raw_toks) > 1 and \
                     (raw_toks[1] == "--" or not raw_toks[1].startswith(("-", "+"))):
@@ -1666,9 +1784,10 @@ def compute(data):
                     r = note(scan(" ".join(shlex.quote(t) for t in out), depth + 1))
                     if r:
                         return r
-            r = note(check_segment(segment, depth))
-            if r:
-                return r
+            for variant in variants:
+                r = note(check_segment(variant, depth))
+                if r:
+                    return r
             toks = strip_wrappers(tokenize(segment) or [])
             if toks:
                 note_symlink(toks)
@@ -1696,7 +1815,11 @@ REMEDY = {
         "DO THIS INSTEAD: delete only inside the allowed roots (the session's working "
         "directory, $TMPDIR, and any delete_allowed_roots in the safety config), or name the "
         "exact files without -r/-f. Tool caches such as node_modules, .venv and __pycache__ "
-        "may be deleted wherever they are. If the person you are working for wants this "
+        "may be deleted wherever they are. A path held in a variable the guard cannot pin to "
+        "one literal value (a loop variable, $(cat file) or $(ls ...), a name rebound by read, "
+        "for, += or eval, or one also written as NAME=... elsewhere in the command) counts as "
+        "outside: delete by the literal path, or keep T=$(mktemp -d) and rm -rf \"$T\" in one "
+        "command. If the person you are working for wants this "
         "delete, they can let it through once by re-running it as: "
         "CLAUDE_GUARD_OVERRIDE='<why this is safe>' <command>"),
     "PROTECTED": (

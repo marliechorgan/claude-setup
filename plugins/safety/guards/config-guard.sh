@@ -17,7 +17,9 @@
 # pushd, simple variable assignments, ~ and $HOME, ../, symlinks already on disk and links
 # made earlier in the same command, and it looks inside $(...), backticks, bash -c, eval,
 # xargs, find -exec, heredocs fed to a shell, and scripts written then run in one command.
-# Write shapes: redirections, tee, sed -i, perl/ruby -i, cp/mv/install/ln/rsync/ditto onto,
+# It also follows a command word held in a variable, code piped into a shell, a module the
+# command writes and then loads (python -m, node require), and the programs git -c can name.
+# Write shapes: redirections, tee, sed -i and sed's w/W/e commands, perl/ruby -i, cp/mv/install/ln/rsync/ditto onto,
 # mv of a control file away, dd of=, truncate, curl -o, wget -O, tar/unzip extracting into a
 # control folder, and python/node/perl/ruby inline code that writes a protected path.
 # Reading a control or secret file is not this guard's concern.
@@ -454,7 +456,11 @@ WRAPPERS = {"sudo", "doas", "command", "builtin", "exec", "nohup", "nice", "time
             "if", "while", "until", "!", "{", "}"}
 SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "fish"}
 PYTHONS = re.compile(r"python[\d.]*\Z|pypy[\d.]*\Z")
+INTERPRETER = re.compile(r"(?:python[\d.]*|pypy[\d.]*|node|nodejs|deno|bun|perl|ruby)\Z")
 COPIERS = {"cp", "gcp", "install", "ginstall", "ln", "gln", "mv", "gmv", "rsync", "ditto"}
+GIT_PROGRAM_KEYS = {"core.pager", "core.editor", "core.sshcommand", "core.fsmonitor", "core.askpass", "diff.external",
+                    "sequence.editor", "credential.helper", "gpg.program", "pager.diff", "pager.log", "pager.show",
+                    "pager.status", "web.browser"}
 
 
 def var_value(text, env):
@@ -498,6 +504,7 @@ class Ctx(object):
 
 
 FINDINGS = []
+RAN = set()      # written files already judged as code, so a module that loads itself ends
 
 
 def note(r, verb):
@@ -631,6 +638,119 @@ def sed_files(args):
     return files
 
 
+def sed_scripts(args):
+    # the script texts of a sed call: every -e / --expression, else the first operand
+    out, skip, explicit = [], False, False
+    for k, a in enumerate(args):
+        t = a.text
+        if t in ("-e", "--expression") and k + 1 < len(args):
+            out.append(args[k + 1].text)
+            explicit = True
+        elif t.startswith("--expression="):
+            out.append(t.split("=", 1)[1])
+            explicit = True
+        elif t in ("-f", "--file"):
+            explicit = True
+    if explicit:
+        return out
+    for k, a in enumerate(args):
+        t = a.text
+        if skip:
+            skip = False
+        elif re.match(r"-[A-Za-z]*i\Z", t) and k + 1 < len(args) and re.match(r"(\.[\w.-]*)?\Z", args[k + 1].text):
+            skip = True
+        elif t in ("-l", "--line-length"):
+            skip = True
+        elif t.startswith("-") and len(t) > 1:
+            continue
+        else:
+            return [t]
+    return []
+
+
+def sed_wfiles(script):
+    # (files a sed script writes with w/W or the s///w flag, shell lines it runs with e).
+    # A file name runs to the end of its line. Unsure text yields nothing more (fail open).
+    files, cmds, i, n = [], [], 0, len(script)
+
+    def line_rest(j):
+        e = script.find("\n", j)
+        e = n if e < 0 else e
+        return script[j:e].strip(), e
+
+    def delimited(j, d):
+        # index just past the closing delimiter d, starting at j; -1 when unclosed
+        while j < n:
+            if script[j] == "\\":
+                j += 2
+                continue
+            if script[j] == d:
+                return j + 1
+            if script[j] == "\n":
+                return -1
+            j += 1
+        return -1
+
+    def word(t):
+        w = Word()
+        w.text = t
+        return w
+
+    while i < n:
+        ch = script[i]
+        if ch in " \t\n;{}!,":
+            i += 1
+            continue
+        if ch.isdigit() or ch in "$~+":
+            i += 1
+            continue
+        if ch == "/" or (ch == "\\" and i + 1 < n):
+            d = "/" if ch == "/" else script[i + 1]
+            j = delimited(i + 1 if ch == "/" else i + 2, d)
+            if j < 0:
+                break
+            i = j
+            while i < n and script[i] in "IM":
+                i += 1
+            continue
+        if ch in "wW":
+            f, i = line_rest(i + 1)
+            if f:
+                files.append(word(f))
+            continue
+        if ch == "e":
+            c, i = line_rest(i + 1)
+            if c:
+                cmds.append(c)
+            continue
+        if ch in "sy" and i + 1 < n and script[i + 1] not in "\n\\":
+            d = script[i + 1]
+            j = delimited(i + 2, d)
+            j = delimited(j, d) if j > 0 else -1
+            if j < 0:
+                break
+            i = j
+            if ch == "s":
+                while i < n and (script[i] in "gpiIeEmM" or script[i].isdigit()):
+                    i += 1
+                if i < n and script[i] == "w":
+                    f, i = line_rest(i + 1)
+                    if f:
+                        files.append(word(f))
+            continue
+        if ch in "aicrR:#":
+            # text, a file read, a label or a comment: the rest of the line is not a command
+            _, i = line_rest(i + 1)
+            continue
+        if ch in "btTvQqlL":
+            # a branch label or a number runs to the next ; or line
+            while i < n and script[i] not in ";\n}":
+                i += 1
+            continue
+        i += 1
+    return files, cmds
+
+
 # Write-capable calls in inline code. A protected path named in code with none of these is a read.
 PY_WRITE = re.compile(
     r"open\s*\([^)]*,\s*(?:mode\s*=\s*)?(?:['\"][^'\"]*[waxWAX+]|[A-Za-z_])|\bmode\s*=|write_text|write_bytes|"
@@ -694,6 +814,9 @@ def py_targets(code, argv):
                 return os.path.join(*args)
             if name == "home" and not args:
                 return HOME
+            if name in ("strip", "lstrip", "rstrip") and isinstance(f, ast.Attribute) and not n.args:
+                b = val(f.value, depth + 1)
+                return getattr(b, name)() if b is not None else None
             if name == "joinpath" and isinstance(f, ast.Attribute):
                 b = val(f.value, depth + 1)
                 if b is not None and args and all(a is not None for a in args):
@@ -830,6 +953,16 @@ def judge_code(lang, code, argv, ctx, verb):
         strs = {a or b for a, b in STR_LIT.findall(code)}
         writes = OTHER_WRITE.search(code)
         uses_argv = bool(re.search(r"argv|ARGV|\$ARGV|process\.argv|@ARGV", code))
+        if lang == "node" and re.search(r"\brequire\s*\(|\bimport\b", code):
+            # a module this command wrote, loaded by a name it does not spell out in full
+            for s in strs:
+                if not s or len(s) > 4096 or "\n" in s:
+                    continue
+                for cand in (s, s + ".js", s + ".mjs", s + ".cjs"):
+                    for p in resolve(cand, ctx):
+                        if p in ctx.written and p not in RAN:
+                            RAN.add(p)
+                            judge_code(lang, ctx.written[p], argv, ctx, verb)
     if not writes:
         return
     strs = {re.sub(r"^[+<>|\s]+", "", x) for x in strs}      # perl's two-argument open glues the mode on
@@ -938,6 +1071,13 @@ def run_statement(words, redirs, ctx, stdin_body, piped_text, depth):
                 ctx.env[n] = val
         return
     head = rest[0]
+    if "$" in head.text and not head.subs:
+        # a command word held in a variable this command set: judge the command it names
+        hv = var_value(head.text, ctx.env)
+        if hv and not re.search(r"\s", hv):
+            head = Word()
+            head.text = head.raw = hv
+            rest = [head] + rest[1:]
     verb = os.path.basename(head.text)
     args = rest[1:]
 
@@ -989,9 +1129,18 @@ def run_statement(words, redirs, ctx, stdin_body, piped_text, depth):
                 for p in resolve(tw, ctx):
                     ctx.written[p] = stdin_body
         return
-    if verb in ("sed", "gsed") and any(re.match(r"-[A-Za-z]*i|--in-place", a.text) for a in args):
-        for f in sed_files(args):
-            judge_word(f, ctx, "sed -i")
+    if verb in ("sed", "gsed"):
+        # a protected name in the script is prose unless a w/W command or s///w flag writes it,
+        # or an e command runs it; with -i the file operands are written too
+        for script in sed_scripts(args):
+            wfiles, cmds = sed_wfiles(script)
+            for f in wfiles:
+                judge_word(f, ctx, "sed w")
+            for c in cmds:
+                scan(c, ctx.child(), depth + 1)
+        if any(re.match(r"-[A-Za-z]*i|--in-place", a.text) for a in args):
+            for f in sed_files(args):
+                judge_word(f, ctx, "sed -i")
         return
     if verb in ("perl", "ruby") and any(re.match(r"-[a-zA-Z0-9]*i", a.text) and not a.text.startswith("--") for a in args):
         files, code_seen, skip = [], False, False
@@ -1066,6 +1215,28 @@ def run_statement(words, redirs, ctx, stdin_body, piped_text, depth):
                 k2 = j
             k2 += 1
         return
+    if verb == "git":
+        # git -c can name a program for git to run: a ! alias, a pager, an editor, a filter or driver
+        k2 = 0
+        while k2 < len(args):
+            t = args[k2].text
+            if t == "-c" and k2 + 1 < len(args):
+                key, _, val = args[k2 + 1].text.partition("=")
+                key = key.lower()
+                if key.startswith("alias.") and val.startswith("!"):
+                    scan(val[1:], ctx.child(), depth + 1)
+                elif val and (key in GIT_PROGRAM_KEYS or key.endswith((".textconv", ".command", ".clean", ".smudge",
+                                                                       ".process", ".driver", ".cmd"))):
+                    scan(val.lstrip("!"), ctx.child(), depth + 1)
+                k2 += 2
+                continue
+            if t in ("-C", "--git-dir", "--work-tree", "--namespace", "--exec-path") and k2 + 1 < len(args):
+                k2 += 2
+                continue
+            if not t.startswith("-"):
+                break
+            k2 += 1
+        return
     if verb in SHELLS or verb in ("eval", "source", "."):
         if verb == "eval":
             scan(" ".join(a.text for a in args), ctx, depth + 1)
@@ -1099,6 +1270,12 @@ def run_statement(words, redirs, ctx, stdin_body, piped_text, depth):
     if lang:
         code, script, argv, is_mod = interp_args(args)
         if is_mod:
+            # python -m <module>: a module this command wrote is run by name
+            if argv and lang == "python":
+                for p in resolve(argv[0].text.replace(".", "/") + ".py", ctx):
+                    if p in ctx.written and p not in RAN:
+                        RAN.add(p)
+                        judge_code(lang, ctx.written[p], argv[1:], ctx, verb + " -m " + argv[0].text)
             return
         if code is not None:
             judge_code(lang, code, argv, ctx, verb + " inline code")
@@ -1157,6 +1334,10 @@ def scan(text, ctx, depth=0):
             printed = [w.text for w in stmt_words[1:]] if stmt_words else []
             if stdin_body is not None:
                 printed.append(stdin_body)
+            if stmt_words and INTERPRETER.match(os.path.basename(stmt_words[0].text)):
+                # code piped into a shell: what it prints is in its string literals
+                for src in list(printed):
+                    printed += [a or b for a, b in STR_LIT.findall(src) if re.search(r"\s", a or b)]
             pipe_text = printed
         else:
             pipe_text = None

@@ -971,5 +971,27 @@
   "env": {
    "CLAUDE_SAFETY_UNATTENDED": "1"
   }
+ },
+ {
+  "name": "a file-scoped checkout in another worktree",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "git -C ../feature-wt checkout -- src/app.py"
+   }
+  },
+  "expect": "allow",
+  "why": "one named file is restored; the guard is textual and never blocks a file-scoped discard"
+ },
+ {
+  "name": "a whole-tree checkout in another worktree still blocks",
+  "payload": {
+   "tool_name": "Bash",
+   "tool_input": {
+    "command": "cd ../feature-wt && git checkout -- ."
+   }
+  },
+  "expect": "block",
+  "why": "the guard cannot see whether a folder is a disposable worktree, so a whole-tree discard blocks everywhere"
  }
 ]
