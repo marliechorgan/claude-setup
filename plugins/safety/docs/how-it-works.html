@@ -195,7 +195,7 @@ figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; max-width: 
   <p class="lead">Claude Code can delete a folder, push over a branch or post a file to a stranger in one line. These guards are hooks that read each tool call before it runs, work out its real effect, and stop the ones that can't be undone. <b>They're code, not instructions, so they don't depend on the model choosing to obey them.</b> Every block tells Claude a safe way to do the job instead, so the work carries on.</p>
   <div class="stats">
     <div class="stat"><span class="stat-value">6</span><span class="stat-label">Guards, one per kind of damage</span><span class="stat-note">Deletes, its own rules, data out, git, network, hidden text</span></div>
-    <div class="stat"><span class="stat-value">464 / 464</span><span class="stat-label">Test cases passing</span><span class="stat-note">Plus 21 wrapper tests. Run 2 Oct 2026</span></div>
+    <div class="stat"><span class="stat-value">625 / 625</span><span class="stat-label">Test cases passing</span><span class="stat-note">Plus 21 wrapper tests. Run 19 Oct 2026</span></div>
     <div class="stat"><span class="stat-value">0 holes</span><span class="stat-label">Across 95 disguised commands</span><span class="stat-note">And 0 over-blocks of ordinary work</span></div>
     <div class="stat"><span class="stat-value">~0.15 s</span><span class="stat-label">Per shell command</span><span class="stat-note">Claude Code runs the five in parallel: 129–224 ms measured</span></div>
   </div>
@@ -601,18 +601,18 @@ Great recipe, five stars. Will make again.</pre>
         <table class="table table-banded table-numeric">
           <thead><tr><th>Guard</th><th>Cases</th><th>Must block</th><th>Must allow</th><th>Passing</th></tr></thead>
           <tbody>
-            <tr><td>command-guard</td><td>151</td><td>105</td><td>46</td><td>151</td></tr>
-            <tr><td>config-guard</td><td>94</td><td>68</td><td>26</td><td>94</td></tr>
-            <tr><td>git-guard</td><td>88</td><td>53</td><td>35</td><td>88</td></tr>
+            <tr><td>command-guard</td><td>228</td><td>160</td><td>68</td><td>228</td></tr>
+            <tr><td>config-guard</td><td>145</td><td>86</td><td>59</td><td>145</td></tr>
+            <tr><td>git-guard</td><td>90</td><td>54</td><td>36</td><td>90</td></tr>
             <tr><td>listen-bind-guard</td><td>65</td><td>38</td><td>27</td><td>65</td></tr>
-            <tr><td>egress-guard</td><td>36</td><td>23</td><td>13</td><td>36</td></tr>
-            <tr><td>ingress-guard</td><td>30</td><td>0</td><td>30</td><td>30</td></tr>
-            <tr class="total"><td>All guards</td><td>464</td><td>287</td><td>177</td><td>464</td></tr>
+            <tr><td>egress-guard</td><td>59</td><td>40</td><td>19</td><td>59</td></tr>
+            <tr><td>ingress-guard</td><td>38</td><td>0</td><td>38</td><td>38</td></tr>
+            <tr class="total"><td>All guards</td><td>625</td><td>378</td><td>247</td><td>625</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-    <figcaption><b>Figure 7</b> · <code>python3 tests/run_cases.py</code>, run 2 Oct 2026. ingress-guard never blocks, so its 30 cases check what it adds to the result instead.</figcaption>
+    <figcaption><b>Figure 7</b> · <code>python3 tests/run_cases.py</code>, run 19 Oct 2026 on macOS. ingress-guard never blocks, so its 38 cases check what it adds to the result instead.</figcaption>
   </figure>
   <div class="cols-3">
     <div class="panel stack-2">
@@ -635,7 +635,7 @@ Great recipe, five stars. Will make again.</pre>
     <span class="eyebrow">Run on real agents: the guards these are ported from, on my own machine</span>
     <p class="h6">Hundreds of Claude Code agents a day, many of them headless</p>
     <div class="figs">
-      <div class="fig"><b>~94,000</b><span>shell commands checked in 16 days, 12–27 Sep 2026</span></div>
+      <div class="fig"><b>~94,000</b><span>shell commands logged in 16 days, 12–27 Sep 2026</span></div>
       <div class="fig"><b>766</b><span>blocks in three weeks: 443 in sessions I was watching, 323 headless</span></div>
       <div class="fig"><b>49 / 0</b><span>overrides written by the agent, attended / headless</span></div>
       <div class="fig"><b>1</b><span>bypass found in my own guard and fixed: an override on one part of a command carried a protected delete later in it</span></div>
@@ -718,7 +718,7 @@ cd claude-setup/plugins/safety/managed
   <ul class="list">
     <li>The repo: <code>README.md</code>, <code>CONTRACT.md</code>, <code>hooks/<wbr>hooks.json</code>, the header of each file in <code>guards/</code>, <code>managed/<wbr>README.md</code>, <code>managed/<wbr>canary.sh</code>, <code>test-kit/<wbr>README.md</code>.</li>
     <li>Every verdict and message: the guards run on the commands shown, 2 Oct 2026, with the home folder written as <code>~</code>. Timings from the same day: the five shell guards started together, as Claude Code starts them, over 48 runs.</li>
-    <li>Test counts: <code>tests/<wbr>run_cases.py</code>, <code>tests/<wbr>test_guard_run.py</code> and <code>test-kit/<wbr>probe.py</code>, run 2 Oct 2026.</li>
+    <li>Test counts: <code>tests/<wbr>run_cases.py</code>, <code>tests/<wbr>test_guard_run.py</code> and <code>test-kit/<wbr>probe.py</code>, run 19 Oct 2026.</li>
     <li>Claude Code's exit codes, timeouts, parallel hooks and managed settings: <a href="https://code.claude.com/docs/en/hooks">code.claude.com/docs/en/hooks</a>.</li>
     <li>Retrying with feedback: Lucassen and Kaufman, <a href="https://blog.redwoodresearch.org/p/retrying-vs-resampling-in-ai-control">Retrying vs Resampling in AI Control</a>, Redwood Research, 29 May 2026.</li>
     <li>"On my own agents": the ledger and activity logs of the guards these were ported from, 12 Sep to 2 Oct 2026. Allowed commands were logged until 27 Sep, so the command count covers 12–27 Sep.</li>
