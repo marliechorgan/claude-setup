@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 (skills)
+- `code-writing`: a pre-submit pass aimed at what independent review most often finds. An independent reviewer read 201 machine-written pull requests and blocked 91 (471 blocking findings): a matcher that missed real spellings or over-matched (28%), a guard with another route around it (23%), a broken caller (12%), a claim the code does not meet (9%). The pass: list every reader of a contract you changed (`scripts/consumers.py` finds candidates and flags callers that discard the status), run each check over its whole input class, list the other routes to the effect a guard prevents, and think through twice / together / late.
+- `code-writing`: check the premise before building on it; keep the invariant the code already embodies; add no limit nobody asked for; prefer a structured signal to a text match; a caller that ignores the status turns a refusal into silence; and a "Say what changed" section for reports written for someone who wasn't watching. Replayed on real cases, the new text beat the old 6 to 2 in blind comparisons.
+
 ## 0.2.0 (safety)
 - Guards brought up to date with fixes made in a production deployment since 30 Sep 2026: 161 new test cases (625 in all, up from 464). Each fix that closes a hole has a case that fails on 0.1.4.
 - `command-guard`: a variable rebound in a way the guard did not track (`T+=`, `for T in`, `read T`, `printf -v T`, `declare -n`, `eval`, `${T:=}`, quoted spellings such as `declare "T=..."`) no longer lets `rm -rf "$T"` reach a protected folder. Deleting your own temp files works with `${TMPDIR:-/tmp}`, `${TMPDIR%/}`, a `cd "$(mktemp -d)" && pwd` folder, a temp path built in an earlier assignment, and the `/private` spelling macOS gives temp folders.
