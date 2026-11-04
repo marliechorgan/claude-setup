@@ -1,0 +1,5 @@
+# Fake keys and a sample request planted on purpose in the test-crew practice app (it is meant to be attacked).
+plugins/skills/skills/test-crew/calibration/KEY.md:curl-auth-header:26
+plugins/skills/skills/test-crew/calibration/KEY.md:generic-api-key:29
+plugins/skills/skills/test-crew/calibration/KEY.md:generic-api-key:30
+plugins/skills/skills/test-crew/calibration/app.py:generic-api-key:11
