@@ -10,7 +10,7 @@ Four habits cut most coding mistakes, human and AI alike. Then a pre-submit pass
 
 ## 1. Think before coding
 
-- State your assumptions. If something is unclear, name what is confusing and ask before writing.
+- State your assumptions. Ask before writing only when the ambiguity changes the result and reading the code or files cannot settle it. Otherwise state the assumption and proceed.
 - If the request has several readings, lay them out rather than picking one silently.
 - If a simpler approach exists, say so. Push back when it is warranted.
 - **Check the premise before building on it.** "X is broken", "Y is still pending", "nothing calls Z": look at the system that would show it (the log, the queue, git, the callers) first. A fix for a problem that isn't there is a new problem.

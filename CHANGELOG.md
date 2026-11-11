@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased (skills)
+- `code-writing`: ask before writing only when the ambiguity changes the result and reading the code or files cannot settle it; otherwise state the assumption and proceed.
+- `worker-brief`: size a worker's budget to the job rather than to a tool-call count; a worker may start read-only helpers for independent parallel reads or an independent check of a costly result, and those helpers spawn nothing.
+- `fanout-brief`: when a job has two or more independent substantial parts, send them out together in one message; the one-level helpers rule now matches `worker-brief`.
+- `build-fast`: new first step, look for what already exists before proposing, and the description now covers asking how to add to or plug into what is already set up.
+- `close-out`: "add it to the queue" counts as parking work.
+
 ## 1.6.0 (skills)
 - The safety guards moved to their own repository, [claude-safety-guards](https://github.com/marliechorgan/claude-safety-guards). This repo now holds the skills, agents and templates only, all MIT. If you installed `safety@claude-setup`, its README has the two-line switch.
 - `close-out`: the description now says what the skill does: reads which kind of close-out was asked for, looks back on the setup and ends the session where it can.

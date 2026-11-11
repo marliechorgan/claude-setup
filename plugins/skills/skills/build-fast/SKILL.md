@@ -1,12 +1,16 @@
 ---
 name: build-fast
-description: The default route from "build me X" to something working that a real person can judge - a new app, tool, AI agent or workflow, prototype, MVP, demo or substantial feature - as fast as possible without fooling yourself. Use when the user says build, make, prototype, spin up, get this working, MVP, demo by a date, as fast as possible, or hands over an idea to turn into software. Sequences the other skills - outcome and outside verdict first, the riskiest unknown spiked in minutes, a thin end-to-end version, parallel workers only for independent pieces, the test-crew on the running thing, and a short evidence page - so the session spends its time on what moves the result. Not for a small fix or edit (code-writing alone) or for the mechanics of splitting work across workers (fanout-brief).
+description: The default route from "build me X" to something working that a real person can judge - a new app, tool, AI agent or workflow, prototype, MVP, demo or substantial feature - as fast as possible without fooling yourself. Use when the user says build, make, prototype, spin up, get this working, MVP, demo by a date, as fast as possible, or hands over an idea to turn into software, or asks how to add to, improve or plug something into what is already set up and running. Sequences the other skills - outcome and outside verdict first, the riskiest unknown spiked in minutes, a thin end-to-end version, parallel workers only for independent pieces, the test-crew on the running thing, and a short evidence page - so the session spends its time on what moves the result. Not for a small fix or edit (code-writing alone) or for the mechanics of splitting work across workers (fanout-brief).
 license: MIT
 ---
 
 # Build fast
 
 Get from an idea to something a real person can use and judge, quickly, with evidence that it works. Most build time is lost in five places: building before knowing who will judge it, scaffolding around an unknown that later kills the idea, splitting work that depends on itself, checking text instead of running the thing, and polishing before anyone outside has looked. Each step below removes one.
+
+## 0. Look for what already exists (two minutes, before you propose anything)
+
+Search the project and the machine for the main nouns of the ask (list the installed skills, scripts, hooks and tools, grep them and any notes the project keeps, list the repositories nearby) and open what you find. Write one word per part of the ask: exists (where), partly (what is missing) or absent. Plan only from the partly and absent parts. If the reply to your plan is "we already have X", this step was skipped.
 
 ## 1. Name the verdict (two minutes)
 
