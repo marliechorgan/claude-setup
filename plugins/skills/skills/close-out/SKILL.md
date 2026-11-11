@@ -1,6 +1,6 @@
 ---
 name: close-out
-description: Finish or pause a piece of work so the result is delivered with honest evidence, the setup gets better from what this session ran into, and the session ends instead of piling up. Use when the user says close out, fully close out, wrap up, finish up, park this, hand over, pick this up later, close this session, or signals they are leaving ("heading off", "that's it for today"); when a coordinating session asks this one to close out; when a long task completes; or before a context reset. Reads which kind of close-out was asked for (park now, close out, or finish everything first), separates changed, tested, committed and deployed, puts anything the user must do first in plain words, leaves one verified next step, and looks back on what the setup could do better. For a small task, two lines is a complete close-out.
+description: Finish or pause a piece of work so the result is delivered with honest evidence, the setup gets better from what this session ran into, and the session ends instead of piling up. Use when the user says close out, fully close out, wrap up, finish up, park this, hand over, pick this up later, add it to the queue, close this session, or signals they are leaving ("heading off", "that's it for today"); when a coordinating session asks this one to close out; when a long task completes; or before a context reset. Reads which kind of close-out was asked for (park now, close out, or finish everything first), separates changed, tested, committed and deployed, puts anything the user must do first in plain words, leaves one verified next step, and looks back on what the setup could do better. For a small task, two lines is a complete close-out.
 license: MIT
 ---
 
@@ -14,7 +14,7 @@ The words decide how much work happens before the report. Get this wrong and the
 
 | They said | Do |
 |---|---|
-| "for now", "later", "leave this", "park", "I'm not doing this now" | **Park.** Start nothing new, including work you had just offered. Make in-flight work safe (saved, committed if that is already authorized, nothing half-written), record every deferred step, each as its own entry, where the next session or the user's queue will find it, and report in a few lines. |
+| "for now", "later", "leave this", "park", "I'm not doing this now", "add it to the queue" | **Park.** Start nothing new, including work you had just offered. Make in-flight work safe (saved, committed if that is already authorized, nothing half-written), record every deferred step, each as its own entry, where the next session or the user's queue will find it, and report in a few lines. |
 | "close out", "wrap up", "/close-out" | **Close out.** Deliver, record, report. |
 | "fully", "close out fully", "do all the relevant things and close out" | **Finish first.** Complete every remaining step the user's standing permission already covers (commit, push, merge through the project's review path, update the records this work changed) so the report holds results, not offers. Finishing means the steps this work already identified, not a new sweep or investigation. Stop only at steps that need a fresh yes, and ask those questions in this report, batched, while the user is here. |
 
