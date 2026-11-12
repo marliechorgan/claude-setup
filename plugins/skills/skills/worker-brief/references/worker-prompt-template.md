@@ -53,7 +53,7 @@ Neighbours: w1 owns app/branches.py (branch lookup). Not yours.
 Authority: run tests and the dev server locally. Do not commit.
 Budget: 40 tool calls. On running out, return what is done and the next step.
 
-Return: scratch/w2/report.md under Changed / Tested / Saved / Not done.
+Return: scratch/w2/w2-out.md under Changed / Tested / Saved / Not done.
 ```
 
 ## A research example (read-only, returns inline)

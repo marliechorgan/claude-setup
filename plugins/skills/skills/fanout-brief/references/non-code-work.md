@@ -26,6 +26,7 @@ Files are not the only thing two workers can collide on:
 
 - **Acceptance as questions.** Write the questions the lead will check, each answerable or UNRESOLVED: "Q1 Has anyone shipped X? Yes or no, with the three strongest examples and their links, or UNRESOLVED with the searches tried." A topic ("look into X") is not acceptance; the worker decides for itself when it is done, and decides early.
 - **A stop rule.** Research has no natural end: "stop at two independent primary sources that agree, or 12 tool calls per question".
+- **The worker that can reach it.** `researcher` for web facts, prices and prior art; `browser-worker` for pages that need the user's login (several at once, each in its own tab); a general-purpose worker for anything that writes, with a write scope. A reader that cannot reach the source returns nothing useful, however good the brief.
 - **Dates.** Every fact carries the date it was true; a price, version or policy without one is a guess.
 - **What is already known.** Pass what was ruled out and which sources were already read, or the worker rediscovers them.
 - **No personal data in a web query.** Give the worker the general question, not the person's situation.
