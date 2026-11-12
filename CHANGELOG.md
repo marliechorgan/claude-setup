@@ -1,11 +1,14 @@
 # Changelog
 
-## Unreleased (skills)
+## 1.7.0 (skills)
 - `code-writing`: ask before writing only when the ambiguity changes the result and reading the code or files cannot settle it; otherwise state the assumption and proceed.
 - `worker-brief`: size a worker's budget to the job rather than to a tool-call count; a worker may start read-only helpers for independent parallel reads or an independent check of a costly result, and those helpers spawn nothing.
 - `fanout-brief`: when a job has two or more independent substantial parts, send them out together in one message; the one-level helpers rule now matches `worker-brief`.
 - `build-fast`: new first step, look for what already exists before proposing, and the description now covers asking how to add to or plug into what is already set up.
-- `close-out`: "add it to the queue" counts as parking work.
+- `close-out`: "add it to the queue" counts as parking work. The description names more of the ways people ask ("just close out for now", "close out fully", "leave this for later", "remove this session", "archive yourself"), so it can fire on those, and says what the look-back (fix what is local now, log the rest for a batch) and the end of the session do.
+- `worker-brief`, `fanout-brief`: name a worker's return file after the worker (`w2-out.md`), never `report.md`. Claude Code blocks a subagent's write to a `.md` starting `report`, `summary`, `findings` or `analysis`, whatever the brief says. The example brief uses the safe name.
+- `fanout-brief`: splitting pays when the answer depends on material in several separate places, one worker per place; one open web question stays with one worker. The non-code guide says which bundled agent can reach what (`researcher` for web facts, `browser-worker` for logged-in pages).
+- `code-writing`, `review-changes`: the "other routes" check names other tools. A hook script that tests for the Bash tool misses the Monitor and PowerShell tools, which also run shell commands: list the tools that can reach the effect and probe each.
 
 ## 1.6.0 (skills)
 - The safety guards moved to their own repository, [claude-safety-guards](https://github.com/marliechorgan/claude-safety-guards). This repo now holds the skills, agents and templates only, all MIT. If you installed `safety@claude-setup`, its README has the two-line switch.
