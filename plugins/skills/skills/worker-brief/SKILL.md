@@ -37,7 +37,7 @@ For a risky change, ask the worker to read the code and return a plan first, cha
 ## Lint it before dispatch
 
 ```bash
-python3 scripts/brief_lint.py [--base DIR]... BRIEF [BRIEF...]   # '-' reads stdin
+python3 scripts/brief_lint.py [--base DIR]... [--memory] BRIEF [BRIEF...]   # '-' reads stdin
 ```
 
 Run it from this skill's directory (or give its full path). It prints one `<brief>: <check>: <detail>` line per finding, then a count. Exit 0 is clean, 1 means findings, 2 means it could not judge (usage error, unreadable brief), so a caller never bounces work on a lint bug. It checks:
@@ -46,6 +46,7 @@ Run it from this skill's directory (or give its full path). It prints one `<brie
 - `drifted-line-ref`: quoted text that is not at its cited line;
 - `path-clash`: a report path that is a brief's own path or a sibling's;
 - `no-acceptance` and `no-write-scope`;
-- `outside-write-scope`: the acceptance needs a file the write scope excludes.
+- `outside-write-scope`: the acceptance needs a file the write scope excludes;
+- `no-memory`, only with `--memory`: no line naming the notes or memory files the worker must read in full (`Memory: decisions.md`), or saying `Memory: none`. Use it where workers draw on a shared notes store; off by default, so existing callers see the same verdicts.
 
 Relative paths are judged only under the `--base` directories you pass. Lint sibling briefs in one call so shared report paths show up. The lint reads paths and labels, not meaning: a brief can pass it and still ask the impossible, so read it once as the worker will before you send it.

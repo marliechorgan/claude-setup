@@ -9,6 +9,9 @@
 - `worker-brief`, `fanout-brief`: name a worker's return file after the worker (`w2-out.md`), never `report.md`. Claude Code blocks a subagent's write to a `.md` starting `report`, `summary`, `findings` or `analysis`, whatever the brief says. The example brief uses the safe name.
 - `fanout-brief`: splitting pays when the answer depends on material in several separate places, one worker per place; one open web question stays with one worker. The non-code guide says which bundled agent can reach what (`researcher` for web facts, `browser-worker` for logged-in pages).
 - `code-writing`, `review-changes`: the "other routes" check names other tools. A hook script that tests for the Bash tool misses the Monitor and PowerShell tools, which also run shell commands: list the tools that can reach the effect and probe each.
+- `worker-brief` lint: a new `--memory` option reports a brief with no line naming the notes the worker must read in full (or `Memory: none`), for setups where workers draw on a shared notes store. Off by default, so existing callers see the same verdicts. Five tests.
+- `browser-worker`: goes only to the site its prompt names and never follows a link off it or searches the web, because its tab can act as the signed-in user; a task that needs no login is handed back as the wrong worker.
+- `ux-tester`, `pentester`: a reproducible high-severity lead that is half-traced when the budget runs out is finished, with the untested areas listed. `strategist`: a third search for existing alternatives only when the first two show a crowded field. `researcher`: if writing its report file is refused, the whole report goes in its final message.
 
 ## 1.6.0 (skills)
 - The safety guards moved to their own repository, [claude-safety-guards](https://github.com/marliechorgan/claude-safety-guards). This repo now holds the skills, agents and templates only, all MIT. If you installed `safety@claude-setup`, its README has the two-line switch.

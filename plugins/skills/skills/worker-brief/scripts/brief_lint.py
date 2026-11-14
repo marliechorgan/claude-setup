@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """brief_lint.py: deterministic checks on a worker brief before it is dispatched.
 
-Usage: brief_lint.py [--base DIR]... BRIEF [BRIEF...]      (BRIEF '-' reads stdin)
+Usage: brief_lint.py [--base DIR]... [--memory] BRIEF [BRIEF...]      (BRIEF '-' reads stdin)
 Standard library only, python 3.9+.
 
 One line per finding, '<brief>: <check>: <detail>', then a summary line. Checks:
@@ -17,6 +17,9 @@ One line per finding, '<brief>: <check>: <detail>', then a summary line. Checks:
   outside-write-scope  the acceptance says a file will be created, written or saved ("write X",
                        "X exists", "a file at X") outside every path the write scope allows; a
                        path it names to read, prune, exclude or delete is not judged
+  no-memory            only with --memory: no memory line ("Memory: <notes to read in full>", or
+                       "Memory: none"). Off by default, so a caller that bounces work on any finding
+                       sees the same verdicts as before unless it asks for this check
 Exit: 0 clean, 1 findings, 2 not judged (usage error, unreadable brief, internal error).
 Relative paths are judged only against --base directories, never the cwd. Paths under /tmp,
 placeholders (<id>, $VAR, ..., YYYY) and URLs are skipped: a gate that bounces work must not guess.
@@ -46,6 +49,12 @@ KINDS = [("accept", re.compile(r"\b(acceptance(?!\s+owner)|done[ -]?when|definit
          ("write", re.compile(r"\b(write scope|write surface|writes|owns?|owned|ownership|may (write|edit|touch|change))\b", re.I)),
          ("return", re.compile(r"\b(returns?|deliverables?|results?|outputs?|reports?)\b", re.I)),
          ("scratch", re.compile(r"\bscratch\b", re.I))]
+# A memory line: "Memory: project_notes.md, decisions.md", "Memory to read in full:", "Memory: none". Its own
+# pattern, outside KINDS, so a label that says "memory" never changes which lines count as acceptance or write scope.
+# It may start the line or follow a sentence on it ("Write scope: read-only. Memory: none."): a one-paragraph brief is common.
+# After "memory" only the words such a label uses: "Memory pressure: watch RSS" and "Memory leak suspected: x" are not one.
+MEMORY_LABEL = re.compile(r"(?:^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)?|[.;!?]\s+)(?:\*\*|__)?(?:life[- ])?memory"
+                          r"(?:\s+(?:files?|notes?|pointers?|sweep|to\s+read(?:\s+in\s+full)?))?(?:\s*\([^)\n]{0,60}\))?(?:\*\*|__)?\s*:", re.I)
 INLINE_ACCEPT = re.compile(r"\b(?:(?:you are )?done[ -]when|acceptance(?!\s+owner)(?: cases| criteria| tests?)?)\b[^:\n]{0,120}:(?!\d)"
                            r"|\b(?:your job ends|done means|(?:finished|complete) when)\b", re.I)
 WRITE_PHRASE = re.compile(r"^\s*(?:[-*+]|\d+[.)])?\s*read[- ]only\b|\b(?:scope|effects?|mode|access)\W{0,4}read[- ]only\b"
@@ -186,6 +195,7 @@ class Brief:
             if WRITE_PHRASE.search(ln):
                 k = k | {"write"}
             self.kinds.append(k)
+        self.memory = [i for i, ln in enumerate(self.lines) if MEMORY_LABEL.search(ln)]
         self.paths = []  # (line, start, end, raw, kind)
         for i, ln in enumerate(self.lines):
             spans = []
@@ -368,6 +378,7 @@ def check_sections(b, out, all_returns):
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--base", action="append", default=[], help="directory that relative paths resolve against (repeatable)")
+    ap.add_argument("--memory", action="store_true", help="also require a memory line (Memory: <notes>, or Memory: none)")
     ap.add_argument("briefs", nargs="+", help="brief file(s), or - for stdin")
     a = ap.parse_args(argv)
     bases = [os.path.abspath(os.path.expanduser(x)) for x in a.base]
@@ -384,13 +395,13 @@ def main(argv):
             print("brief_lint: cannot read %s: %s" % (arg, exc), file=sys.stderr)
             return 2
     try:  # a lint bug must exit 2 (not judged), never 1: a caller bounces work on findings
-        return lint(briefs)
+        return lint(briefs, memory=a.memory)
     except Exception as exc:
         print("brief_lint: internal error, briefs not judged: %r" % (exc,), file=sys.stderr)
         return 2
 
 
-def lint(briefs):
+def lint(briefs, memory=False):
     all_returns, total = {}, 0
     for b in briefs:
         for raw, kind in b.returns():
@@ -401,6 +412,8 @@ def lint(briefs):
         check_paths(b, out)
         check_line_refs(b, out)
         check_sections(b, out, all_returns)
+        if memory and not b.memory:
+            out.append(("no-memory", "no memory line: name the memory notes the worker must read in full (Memory: ...), or say Memory: none"))
         for raw, kind in b.returns():
             other = brief_paths.get(os.path.realpath(b.candidates(raw, kind)[0])) if kind == "abs" else None
             if other and other != b.label:

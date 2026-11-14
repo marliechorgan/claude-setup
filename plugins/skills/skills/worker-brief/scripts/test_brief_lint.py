@@ -363,5 +363,41 @@ class ReviewFixes(LintCase):
         self.assertEqual(code, 0, out)
 
 
+class MemoryLine(LintCase):
+    """--memory asks for a memory line; without the flag the lint's verdict is what it was (a caller may bounce a
+    brief on any finding, so the default must not grow a new one)."""
+
+    def test_default_run_never_reports_no_memory(self):
+        code, out, _ = self.lint(self.brief(GOOD))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.findings(out, "no-memory"), [])
+
+    def test_flag_reports_a_brief_with_no_memory_line(self):
+        code, out, _ = self.lint("--memory", self.brief(GOOD))
+        self.assertEqual(code, 1, out)
+        self.assertEqual(len(self.findings(out, "no-memory")), 1, out)
+
+    def test_flag_accepts_the_spellings_of_a_memory_line(self):
+        for line in ("Memory: none", "Memory: project_notes.md, decisions.md", "- **Memory to read in full:** decisions.md",
+                     "## Memory: team.md", "memory (read IN FULL): project_x.md", "Life memory: none", "3. Memory files: a.md",
+                     "Write scope: read-only. Memory: none.", "Memory notes (start at § Dates): decisions.md"):
+            code, out, _ = self.lint("--memory", self.brief(GOOD + "\n" + line + "\n"))
+            self.assertEqual(self.findings(out, "no-memory"), [], line)
+            self.assertEqual(code, 0, line + " :: " + out)
+
+    def test_flag_is_not_satisfied_by_memory_in_prose(self):
+        for line in ("In-memory caches are fine here.", "Keep memory use under 1 GB: the box is small.", "Do not write to the memory store.",
+                     "The task: memory of the last run is in the log.", "Memory pressure: watch RSS", "- Memory leak suspected: x",
+                     "Memory of the last run: gone"):
+            code, out, _ = self.lint("--memory", self.brief(GOOD + "\n" + line + "\n"))
+            self.assertEqual(len(self.findings(out, "no-memory")), 1, line + " :: " + out)
+
+    def test_a_memory_label_inside_an_acceptance_list_changes_no_other_verdict(self):
+        t = GOOD + "\n- Memory: none\n"
+        plain = self.lint(self.brief(GOOD, "a.md"))
+        with_line = self.lint(self.brief(t, "b.md"))
+        self.assertEqual(plain[0], with_line[0], with_line[1])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
